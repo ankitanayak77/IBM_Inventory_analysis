@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up{% endblock %}
+{% block breadcrumb %}
+<span>Authentication</span>
+<span>/</span>
+<span class="breadcrumb-active">Sign Up</span>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card" style="max-width: 520px;">
+        <!-- Auth Header -->
+        <div class="auth-header">
+            <div class="auth-brand-icon">✨</div>
+            <h2 class="auth-title">Create Your Account</h2>
+            <p class="auth-subtitle">Join the Smart Inventory & Analytics Management Platform</p>
+        </div>
+
+        <!-- Signup Form -->
+        <form method="POST" action="{{ url_for('signup') }}" id="signupForm" class="auth-form">
+            <div class="form-group">
+                <label class="form-label" for="name">
+                    Full Name <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                    <span class="input-icon">👤</span>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        name="name" 
+                        class="form-control" 
+                        placeholder="e.g. Alex Morgan" 
+                        value="{{ name if name else '' }}"
+                        required
+                        autofocus
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="email">
+                    Work Email <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                    <span class="input-icon">✉️</span>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        class="form-control" 
+                        placeholder="alex.morgan@company.com" 
+                        value="{{ email if email else '' }}"
+                        required
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="role">
+                    Operational Role <span class="required">*</span>
+                </label>
+                <select id="role" name="role" class="form-control">
+                    <option value="Analyst" {% if role == 'Analyst' %}selected{% endif %}>Data Analyst (BI & Forecasting)</option>
+                    <option value="Inventory Manager" {% if role == 'Inventory Manager' %}selected{% endif %}>Inventory Manager (Stock & Restocks)</option>
+                    <option value="Store Associate" {% if role == 'Store Associate' %}selected{% endif %}>Store Associate (Sales & Point-of-Sale)</option>
+                    <option value="Administrator" {% if role == 'Administrator' %}selected{% endif %}>System Administrator (Full Governance)</option>
+                </select>
+                <span class="form-help-inline" style="font-size:0.75rem; color:var(--text-muted);">Defines your default dashboard permissions & focus area.</span>
+            </div>
+
+            <div class="form-grid" style="margin-bottom:0;">
+                <div class="form-group">
+                    <label class="form-label" for="password">
+                        Password <span class="required">*</span>
+                    </label>
+                    <div class="input-with-icon">
+                        <span class="input-icon">🔒</span>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="form-control" 
+                            placeholder="Min. 6 chars" 
+                            minlength="6"
+                            required
+                        >
+                        <button type="button" class="password-toggle" onclick="togglePassword('password', this)" title="Show/Hide">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirm_password">
+                        Confirm Password <span class="required">*</span>
+                    </label>
+                    <div class="input-with-icon">
+                        <span class="input-icon">🔑</span>
+                        <input 
+                            type="password" 
+                            id="confirm_password" 
+                            name="confirm_password" 
+                            class="form-control" 
+                            placeholder="Re-type password" 
+                            minlength="6"
+                            required
+                        >
+                        <button type="button" class="password-toggle" onclick="togglePassword('confirm_password', this)" title="Show/Hide">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row-auth" style="margin-top:-6px;">
+                <label class="checkbox-label" style="font-size:0.8rem;">
+                    <input type="checkbox" name="accept_terms" value="1" checked required>
+                    <span>I agree to system inventory logging & data audit policies</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitBtn">
+                <span>Create Account & Sign In &rarr;</span>
+            </button>
+        </form>
+
+        <!-- Auth Footer Switch -->
+        <div class="auth-footer">
+            <span>Already have an account?</span>
+            <a href="{{ url_for('login') }}" class="auth-link">Sign In here</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 16px 60px 16px;
+    min-height: calc(100vh - 180px);
+}
+
+.auth-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: 36px 32px;
+    width: 100%;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.auth-brand-icon {
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+    display: inline-block;
+}
+
+.auth-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 6px 0;
+}
+
+.auth-subtitle {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 12px;
+    font-size: 1rem;
+    pointer-events: none;
+    color: var(--text-light);
+}
+
+.input-with-icon .form-control {
+    padding-left: 38px;
+    padding-right: 40px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+}
+
+.password-toggle:hover {
+    opacity: 1;
+}
+
+.form-row-auth {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.84rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #334155;
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    accent-color: var(--brand-primary);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+.btn-block {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-lg {
+    padding: 12px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.auth-footer {
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-subtle);
+    text-align: center;
+    font-size: 0.86rem;
+    color: var(--text-muted);
+}
+
+.auth-link {
+    color: var(--brand-primary);
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: 4px;
+}
+
+.auth-link:hover {
+    text-decoration: underline;
+    color: var(--brand-hover);
+}
+</style>
+
+<script>
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+    }
+}
+</script>
+{% endblock %}

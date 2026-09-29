@@ -11,10 +11,10 @@ import math
 import datetime
 import io
 from pathlib import Path
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify, Response, session
 from config import Config
 import db
-from services import analytics_service, recommendation_service, dashboard_service, report_service
+from services import analytics_service, recommendation_service, dashboard_service, report_service, auth_service
 
 def create_app(config_class=Config):
     """Application factory for Flask app."""
@@ -24,14 +24,92 @@ def create_app(config_class=Config):
     # Initialize database teardown hooks
     db.init_app(app)
 
+    # Initialize authentication schema and demo users
+    with app.app_context():
+        auth_service.init_auth_table()
+
     # Context processor to inject global variables into templates
     @app.context_processor
     def inject_globals():
+        user_id = session.get("user_id")
+        current_user = auth_service.get_user_by_id(user_id) if user_id else None
         return {
             "app_name": app.config.get("APP_NAME", "Smart Inventory System"),
             "app_version": app.config.get("VERSION", "1.0.0"),
-            "current_endpoint": request.endpoint
+            "current_endpoint": request.endpoint,
+            "current_user": current_user
         }
+
+    # ==========================================================
+    # ROUTES - AUTHENTICATION (SIGN IN & SIGN UP)
+    # ==========================================================
+
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+        """User Sign In route."""
+        if "user_id" in session:
+            return redirect(url_for("dashboard"))
+
+        if request.method == "POST":
+            email = request.form.get("email")
+            password = request.form.get("password")
+            remember = bool(request.form.get("remember"))
+
+            res = auth_service.authenticate_user(email, password)
+            if res["success"]:
+                user = res["user"]
+                session["user_id"] = user["user_id"]
+                session["user_name"] = user["name"]
+                session["user_role"] = user["role"]
+                session.permanent = remember
+                flash(f"Welcome back, {user['name']}! Signed in as {user['role']}.", "success")
+                next_page = request.args.get("next")
+                if next_page and next_page.startswith("/"):
+                    return redirect(next_page)
+                return redirect(url_for("dashboard"))
+            else:
+                flash(res["message"], "danger")
+                return render_template("login.html", email=email), 401
+
+        return render_template("login.html")
+
+    @app.route("/signup", methods=["GET", "POST"])
+    def signup():
+        """User Sign Up / Registration route."""
+        if "user_id" in session:
+            return redirect(url_for("dashboard"))
+
+        if request.method == "POST":
+            name = request.form.get("name")
+            email = request.form.get("email")
+            password = request.form.get("password")
+            confirm_password = request.form.get("confirm_password")
+            role = request.form.get("role", "Analyst")
+
+            res = auth_service.register_user(name, email, password, confirm_password, role)
+            if res["success"]:
+                user = res["user"]
+                session["user_id"] = user["user_id"]
+                session["user_name"] = user["name"]
+                session["user_role"] = user["role"]
+                flash(res["message"], "success")
+                return redirect(url_for("dashboard"))
+            else:
+                flash(res["message"], "danger")
+                return render_template("signup.html", name=name, email=email, role=role), 400
+
+        return render_template("signup.html")
+
+    @app.route("/logout")
+    def logout():
+        """User Sign Out route."""
+        user_name = session.get("user_name")
+        session.clear()
+        if user_name:
+            flash(f"Goodbye, {user_name}! You have been signed out successfully.", "info")
+        else:
+            flash("You have been signed out.", "info")
+        return redirect(url_for("login"))
 
     # ==========================================================
     # ROUTES - DASHBOARD

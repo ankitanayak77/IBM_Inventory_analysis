@@ -23,6 +23,9 @@ ROUTES_TO_TEST = [
     ("/reports", 200, "Analytical Reports"),
     ("/products/1", 200, "Action Figure"),
     ("/sales/829262", 200, "Sale Transaction #829262"),
+    # Auth
+    ("/login", 200, "Sign In"),
+    ("/signup", 200, "Create Your Account"),
     # Forms
     ("/products/add", 200, "Add New Catalog Product"),
     ("/products/1/edit", 200, "Edit Product"),
