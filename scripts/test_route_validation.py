@@ -41,6 +41,10 @@ AUTHENTICATED_ROUTES = [
     ("/restock/add", 200, "Record Inbound Restock"),
     # Role Governance (Administrator)
     ("/admin/users", 200, "User & Role Governance"),
+    # User Profile & Account Management
+    ("/profile", 200, "My Profile"),
+    ("/profile/edit", 200, "Edit My Profile"),
+    ("/profile/password", 200, "Change Password"),
     # Filters & Pagination
     ("/products?search=Action", 200, "Action Figure"),
     ("/inventory?status=LOW+STOCK", 200, "LOW STOCK"),

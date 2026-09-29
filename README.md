@@ -381,6 +381,17 @@ The application features a production-hardened authentication architecture desig
 - **Session Security:** `SESSION_COOKIE_HTTPONLY = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`, configurable `Secure` cookie flag for HTTPS, explicit 7-day session lifetime, and session fixation defense via `session.clear()`.
 - **Branded Error Handling:** Custom branded pages for `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, and `500 Server Error`.
 
+### User Profile & Account Management
+
+Authenticated users can manage their personal identity and security settings from the navigation avatar menu:
+- **My Profile (`/profile`):** Displays account metadata (Full Name, Email, User ID, Role badge, Account Status, Creation Date, Last Login, and Role Permission Scope).
+- **Edit Profile (`/profile/edit`):** Allows users to update their **Full Name** (2–60 characters) and **Email Address** (normalized lowercase, validated uniqueness).
+  - *Email Change Security Policy:* Changing the account sign-in email strictly requires **Current Password Confirmation** to prevent unauthorized identity reassignment.
+  - *Role & ID Immutability:* User ID, operational role, account status, and registration date cannot be modified by the user.
+- **Change Password (`/profile/password`):** Secure password updates enforcing current password verification, complex password policies (min 8 chars, letters + numbers/symbols, weak password blacklist), confirmation matching, and scrypt hash generation.
+  - *Session Termination:* Upon a successful password update, all active sessions are invalidated immediately (`session.clear()`), requiring the user to authenticate with their new credentials.
+- **Local Identity Notice:** Email addresses serve as unique local sign-in identities within SQLite. The application does not claim external email verification or transmit outbound SMTP tokens.
+
 ### Development / Demo Accounts
 
 For local demonstration, evaluation, and automated testing only, demo accounts are pre-seeded with development passwords configurable via environment variables:
@@ -399,7 +410,7 @@ For local demonstration, evaluation, and automated testing only, demo accounts a
 
 ## 25. How to Run All Tests
 
-To run the complete automated test suite across all 12 development and security phases in one command:
+To run the complete automated test suite across all 13 development and security phases in one command:
 ```bash
 python scripts/run_all_regressions.py
 ```
@@ -423,8 +434,15 @@ python scripts/test_phase13.py
 python scripts/test_route_validation.py
 python scripts/test_business_workflow.py
 
-# Enterprise Authentication & RBAC Suite
+# Enterprise Authentication & Security Suite (25 Tests)
 python scripts/test_auth.py
+
+# User Profile & Account Management Suite (25 Tests)
+python scripts/test_profile.py
+
+# Headless Chrome Browser Lifecycle Validation
+python scripts/test_auth_browser_headless.py
+python scripts/test_profile_browser_headless.py
 ```
 
 ---
@@ -515,6 +533,9 @@ inventory-analysis/
 │   ├── base.html
 │   ├── login.html              # Hardened Sign-In with remember me & eye toggle
 │   ├── signup.html             # Safe Sign-Up with strength meter & checklist
+│   ├── profile.html            # User Profile & Account Overview
+│   ├── edit_profile.html       # Edit Full Name & Work Email
+│   ├── change_password.html    # Password update with strength meter
 │   ├── dashboard.html
 │   ├── products.html
 │   ├── add_product.html
@@ -554,8 +575,10 @@ inventory-analysis/
     ├── test_route_validation.py
     ├── test_business_workflow.py
     ├── test_auth.py            # 25 Enterprise security & RBAC tests
-    ├── test_auth_browser_headless.py # Headless Chrome browser renderer
-    └── run_all_regressions.py  # Master test runner (12/12 suites)
+    ├── test_profile.py         # 25 User profile & account management tests
+    ├── test_auth_browser_headless.py # Headless Chrome auth renderer
+    ├── test_profile_browser_headless.py # Headless Chrome profile renderer
+    └── run_all_regressions.py  # Master test runner (13/13 suites)
 ```
 
 ---

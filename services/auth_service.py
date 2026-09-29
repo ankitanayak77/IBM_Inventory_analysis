@@ -421,3 +421,146 @@ def toggle_user_status(admin_user_id, target_user_id):
     conn.commit()
     action = "activated" if new_status == 1 else "deactivated"
     return True, f"User account has been {action}."
+
+# ==========================================================
+# Profile & Account Management Services
+# ==========================================================
+
+def get_user_initials(name):
+    """Generate 1-2 character uppercase initials from a user's name."""
+    if not name:
+        return "U"
+    parts = [p for p in name.strip().split() if p]
+    if len(parts) >= 2:
+        return f"{parts[0][0]}{parts[-1][0]}".upper()
+    elif len(parts) == 1:
+        return parts[0][:2].upper()
+    return "U"
+
+def update_user_profile(user_id, name, email, current_password=None):
+    """
+    Update personal profile information for the authenticated user.
+    - Name and Email are editable.
+    - User ID, Role, Status, and Created Date are strictly immutable.
+    - Changing email requires verifying current password confirmation.
+    - Email uniqueness is strictly enforced against all other accounts.
+    """
+    if not user_id:
+        return {"success": False, "message": "Authentication required."}
+
+    conn = db.get_db()
+    user_row = conn.execute("""
+        SELECT user_id, name, email, password_hash, role, is_active
+        FROM users
+        WHERE user_id = ? AND is_active = 1;
+    """, (user_id,)).fetchone()
+
+    if not user_row:
+        return {"success": False, "message": "User account not found or inactive."}
+
+    # Validate name
+    name = (name or "").strip()
+    if not name or len(name) < 2 or len(name) > 60:
+        return {"success": False, "message": "Full name must be between 2 and 60 characters."}
+
+    # Validate email
+    email = (email or "").strip().lower()
+    email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+    if not email or not re.match(email_regex, email) or len(email) > 120:
+        return {"success": False, "message": "Please enter a valid email address."}
+
+    current_email = (user_row["email"] or "").strip().lower()
+    email_changed = (email != current_email)
+
+    # Email Change Safety: require current password confirmation
+    if email_changed:
+        if not current_password:
+            return {
+                "success": False,
+                "message": "Current password is required to change your email address for account security."
+            }
+
+        if not check_password_hash(user_row["password_hash"], current_password):
+            return {
+                "success": False,
+                "message": "Current password verification failed. Email address was not changed."
+            }
+
+        # Enforce email uniqueness against other users
+        existing = conn.execute(
+            "SELECT user_id FROM users WHERE email = ? AND user_id != ?;",
+            (email, user_id)
+        ).fetchone()
+        if existing:
+            return {
+                "success": False,
+                "message": f"The email '{email}' is already registered to another account."
+            }
+
+    # Save updates safely (only name and email are updated)
+    conn.execute("""
+        UPDATE users
+        SET name = ?, email = ?
+        WHERE user_id = ?;
+    """, (name, email, user_id))
+    conn.commit()
+
+    updated_user = get_user_by_id(user_id)
+    return {
+        "success": True,
+        "message": "Profile updated successfully.",
+        "user": updated_user,
+        "email_changed": email_changed
+    }
+
+def change_user_password(user_id, current_password, new_password, confirm_password):
+    """
+    Safely change password for authenticated user.
+    - Verifies existing password hash.
+    - Enforces password strength policy and confirmation matching.
+    - Generates new scrypt hash using Werkzeug.
+    - Plaintext password is never stored or logged.
+    """
+    if not user_id:
+        return {"success": False, "message": "Authentication required."}
+
+    conn = db.get_db()
+    user_row = conn.execute("""
+        SELECT user_id, password_hash
+        FROM users
+        WHERE user_id = ? AND is_active = 1;
+    """, (user_id,)).fetchone()
+
+    if not user_row:
+        return {"success": False, "message": "User account not found or inactive."}
+
+    # Verify current password
+    if not current_password or not check_password_hash(user_row["password_hash"], current_password):
+        return {"success": False, "message": "Incorrect current password."}
+
+    # Verify confirmation match
+    if not new_password or not confirm_password:
+        return {"success": False, "message": "Please provide both the new password and confirmation."}
+
+    if new_password != confirm_password:
+        return {"success": False, "message": "New password and confirmation do not match."}
+
+    # Check password strength policy
+    is_valid, err_msg = validate_password_strength(new_password)
+    if not is_valid:
+        return {"success": False, "message": err_msg}
+
+    # Save new password hash (scrypt)
+    new_hash = generate_password_hash(new_password)
+    conn.execute("""
+        UPDATE users
+        SET password_hash = ?
+        WHERE user_id = ?;
+    """, (new_hash, user_id))
+    conn.commit()
+
+    return {
+        "success": True,
+        "message": "Password changed successfully. Please sign in again with your new credentials."
+    }
+

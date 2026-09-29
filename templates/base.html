@@ -66,6 +66,14 @@
                 <span>Reports & BI</span>
             </a>
 
+            {% if current_user %}
+            <div class="nav-section-title">My Account</div>
+            <a href="{{ url_for('profile') }}" class="nav-link {% if request.path.startswith('/profile') %}active{% endif %}">
+                <span class="nav-icon">👤</span>
+                <span>My Profile</span>
+            </a>
+            {% endif %}
+
             {% if current_user and current_user.role == 'Administrator' %}
             <div class="nav-section-title">Administration</div>
             <a href="{{ url_for('admin_users') }}" class="nav-link {% if request.path.startswith('/admin') %}active{% endif %}">
@@ -107,13 +115,16 @@
                 </span>
                 {% if current_user %}
                 <div class="user-profile-menu">
-                    <div class="user-avatar-badge" title="Signed in as {{ current_user.email }}">
-                        <span class="user-avatar-circle">{{ current_user.name[:1].upper() }}</span>
+                    <a href="{{ url_for('profile') }}" class="user-avatar-badge" title="My Profile ({{ current_user.email }})" style="text-decoration:none; color:inherit;">
+                        <span class="user-avatar-circle">{{ user_initials or current_user.name[:2].upper() }}</span>
                         <div class="user-meta">
                             <span class="user-name">{{ current_user.name }}</span>
                             <span class="user-role-badge">{{ current_user.role }}</span>
                         </div>
-                    </div>
+                    </a>
+                    <a href="{{ url_for('profile') }}" class="btn btn-outline btn-sm" title="My Profile">
+                        <span>👤</span> My Profile
+                    </a>
                     <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm" title="Sign Out">
                         Sign Out
                     </a>

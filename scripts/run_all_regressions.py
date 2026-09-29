@@ -36,11 +36,12 @@ TEST_SUITES = [
     ("Phase 14 - Route & Auth Validation", "scripts/test_route_validation.py"),
     ("Phase 14 - Business Lifecycle", "scripts/test_business_workflow.py"),
     ("Security - Enterprise Auth & RBAC", "scripts/test_auth.py"),
+    ("Account  - User Profile & Management", "scripts/test_profile.py"),
 ]
 
 def run_all():
     print("=" * 75)
-    print("STARTING FULL MASTER REGRESSION TEST SUITE (12 TEST SUITES)")
+    print("STARTING FULL MASTER REGRESSION TEST SUITE (13 TEST SUITES)")
     print("=" * 75)
 
     start_time = time.time()
@@ -76,7 +77,7 @@ def run_all():
         print(f"\nFAILED SUITES: {failed_suites}")
         sys.exit(1)
     else:
-        print("\nALL 12 REGRESSION SUITES PASSED CLEANLY! (100% SUCCESS)")
+        print("\nALL 13 REGRESSION SUITES PASSED CLEANLY! (100% SUCCESS)")
         print("=" * 75)
         sys.exit(0)
 

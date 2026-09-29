@@ -35,11 +35,13 @@ def create_app(config_class=Config):
     def inject_globals():
         user_id = session.get("user_id")
         current_user = auth_service.get_user_by_id(user_id) if user_id else None
+        user_initials = auth_service.get_user_initials(current_user["name"]) if current_user else ""
         return {
             "app_name": app.config.get("APP_NAME", "Smart Inventory System"),
             "app_version": app.config.get("VERSION", "1.0.0"),
             "current_endpoint": request.endpoint,
-            "current_user": current_user
+            "current_user": current_user,
+            "user_initials": user_initials
         }
 
     # ==========================================================
@@ -150,6 +152,89 @@ def create_app(config_class=Config):
         category = "success" if success else "danger"
         flash(msg, category)
         return redirect(url_for("admin_users"))
+
+    # ==========================================================
+    # ROUTES - USER PROFILE & ACCOUNT MANAGEMENT
+    # ==========================================================
+
+    @app.route("/profile", methods=["GET"])
+    @auth_service.login_required
+    def profile():
+        """User Profile view displaying account information."""
+        user_id = session.get("user_id")
+        user = auth_service.get_user_by_id(user_id)
+        if not user:
+            session.clear()
+            flash("User session expired. Please sign in again.", "warning")
+            return redirect(url_for("login"))
+        user_initials = auth_service.get_user_initials(user["name"])
+        return render_template("profile.html", user=user, user_initials=user_initials)
+
+    @app.route("/profile/edit", methods=["GET", "POST"])
+    @auth_service.login_required
+    def edit_profile():
+        """Edit profile personal information (Full Name, Email)."""
+        user_id = session.get("user_id")
+        user = auth_service.get_user_by_id(user_id)
+        if not user:
+            session.clear()
+            flash("User session expired. Please sign in again.", "warning")
+            return redirect(url_for("login"))
+
+        user_initials = auth_service.get_user_initials(user["name"])
+
+        if request.method == "POST":
+            name = request.form.get("name")
+            email = request.form.get("email")
+            current_password = request.form.get("current_password")
+
+            res = auth_service.update_user_profile(user_id, name, email, current_password)
+            if res["success"]:
+                session["user_name"] = res["user"]["name"]
+                session["user_email"] = res["user"]["email"]
+                flash(res["message"], "success")
+                return redirect(url_for("profile"))
+            else:
+                flash(res["message"], "danger")
+                user_form_state = dict(user)
+                user_form_state["name"] = name or ""
+                user_form_state["email"] = email or ""
+                return render_template(
+                    "edit_profile.html",
+                    user=user_form_state,
+                    user_initials=user_initials
+                )
+
+        return render_template("edit_profile.html", user=user, user_initials=user_initials)
+
+    @app.route("/profile/password", methods=["GET", "POST"])
+    @auth_service.login_required
+    def change_password():
+        """Change authenticated user's password."""
+        user_id = session.get("user_id")
+        user = auth_service.get_user_by_id(user_id)
+        if not user:
+            session.clear()
+            flash("User session expired. Please sign in again.", "warning")
+            return redirect(url_for("login"))
+
+        user_initials = auth_service.get_user_initials(user["name"])
+
+        if request.method == "POST":
+            current_password = request.form.get("current_password")
+            new_password = request.form.get("new_password")
+            confirm_password = request.form.get("confirm_password")
+
+            res = auth_service.change_user_password(user_id, current_password, new_password, confirm_password)
+            if res["success"]:
+                session.clear()
+                flash(res["message"], "success")
+                return redirect(url_for("login"))
+            else:
+                flash(res["message"], "danger")
+                return render_template("change_password.html", user=user, user_initials=user_initials)
+
+        return render_template("change_password.html", user=user, user_initials=user_initials)
 
     # ==========================================================
     # ROUTES - DASHBOARD

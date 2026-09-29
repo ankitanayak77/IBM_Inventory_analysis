@@ -49,11 +49,12 @@ The authentication sub-system is organized in a clean service-oriented architect
 ```
 
 ### Core Components
-1. **`services/auth_service.py`:** Dedicated business logic service handling password hashing/verification, registration validation, timing-attack defenses, brute-force tracking, session lifecycle management, and administrative role assignment.
-2. **`app.py`:** Application factory integrating `Flask-WTF` CSRF protection, route guards, error handlers (401, 403, 404, 500, CSRFError), and administrative user management routes.
+1. **`services/auth_service.py`:** Dedicated business logic service handling password hashing/verification, registration validation, timing-attack defenses, brute-force tracking, session lifecycle management, profile editing, password changing, and administrative role assignment.
+2. **`app.py`:** Application factory integrating `Flask-WTF` CSRF protection, route guards, error handlers (401, 403, 404, 500, CSRFError), user profile endpoints (`/profile`, `/profile/edit`, `/profile/password`), and administrative user management routes.
 3. **`config.py`:** Centralized environment configuration enforcing cookie security (`HTTPOnly`, `SameSite=Lax`, configurable `Secure`), session expiration, and demo development credentials.
 4. **`templates/login.html` & `templates/signup.html`:** Accessible UI with eye toggles, real-time password strength meter, requirement checklist, and CSRF token binding.
-5. **`templates/admin/users.html`:** Dedicated user & role governance view for System Administrators.
+5. **`templates/profile.html`, `templates/edit_profile.html`, `templates/change_password.html`:** User self-service profile and credential management suite with role badge, read-only ID/metadata, password confirmation for email changes, dynamic strength meter, and session termination notice.
+6. **`templates/admin/users.html`:** Dedicated user & role governance view for System Administrators.
 
 ---
 
@@ -61,17 +62,20 @@ The authentication sub-system is organized in a clean service-oriented architect
 
 | Security Control | Implementation Mechanism | Verification Test |
 | :--- | :--- | :--- |
-| **Password Storage** | **scrypt** (`scrypt:32768:8:1`) via Werkzeug (`generate_password_hash`); plaintext is never stored or logged | Test #9 (`test_auth.py`) |
-| **Public Role Restriction** | Public sign-up unconditionally assigns least-privileged `Store Associate`; ignores client-supplied `role` | Test #24, #25 |
-| **Password Strength Policy** | Min 8 chars, letters + numbers/symbols, weak password blacklist (rejects common patterns) | Test #5, #6 |
-| **User Enumeration Defense** | Uniform generic error message (*"Invalid email or password."*) with dummy hash timing defense | Test #11, #12, #13 |
-| **Brute-Force Lockout** | 5 consecutive failed logins triggers a 15-minute temporary lockout (`locked_until`) | Test #23 |
-| **CSRF Defense** | `Flask-WTF` (`CSRFProtect`) on all state-changing POST requests; rejects invalid/missing tokens | Test #22 |
-| **Open Redirect Defense** | `is_safe_url` validates relative local paths; rejects protocol-relative and external URLs | Test #19, #20 |
-| **Session Fixation Defense** | `session.clear()` invoked upon successful authentication and logout | Test #10, #14 |
+| **Password Storage** | **scrypt** (`scrypt:32768:8:1`) via Werkzeug (`generate_password_hash`); plaintext is never stored or logged | Test #9 (`test_auth.py`), Test #20 (`test_profile.py`) |
+| **Public Role Restriction** | Public sign-up unconditionally assigns least-privileged `Store Associate`; ignores client-supplied `role` | Test #24, #25 (`test_auth.py`) |
+| **Password Strength Policy** | Min 8 chars, letters + numbers/symbols, weak password blacklist (rejects common patterns) | Test #5, #6 (`test_auth.py`), Test #19 (`test_profile.py`) |
+| **User Enumeration Defense** | Uniform generic error message (*"Invalid email or password."*) with dummy hash timing defense | Test #11, #12, #13 (`test_auth.py`) |
+| **Brute-Force Lockout** | 5 consecutive failed logins triggers a 15-minute temporary lockout (`locked_until`) | Test #23 (`test_auth.py`) |
+| **CSRF Defense** | `Flask-WTF` (`CSRFProtect`) on all state-changing POST requests; rejects invalid/missing tokens | Test #22 (`test_auth.py`), Test #14 (`test_profile.py`) |
+| **Open Redirect Defense** | `is_safe_url` validates relative local paths; rejects protocol-relative and external URLs | Test #19, #20 (`test_auth.py`) |
+| **Session Fixation Defense** | `session.clear()` invoked upon successful authentication, logout, and password change | Test #10, #14 (`test_auth.py`), Test #21 (`test_profile.py`) |
 | **Cookie Hardening** | `SESSION_COOKIE_HTTPONLY = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`, configurable `Secure` | Architecture check |
-| **Server-Side Authorization** | `@login_required` and `@role_required(...)` protect views and JSON APIs (HTTP 401/403) | Test #15, #16, #17, #18 |
-| **Account Governance** | Deactivated accounts (`is_active = 0`) are immediately blocked from logging in or using sessions | Test #21 |
+| **Server-Side Authorization** | `@login_required` and `@role_required(...)` protect views and JSON APIs (HTTP 401/403) | Test #15, #16, #17, #18 (`test_auth.py`) |
+| **Account Governance** | Deactivated accounts (`is_active = 0`) are immediately blocked from logging in or using sessions | Test #21 (`test_auth.py`) |
+| **Email Change Authorization** | Modifying sign-in email strictly requires current password verification; enforces uniqueness across DB | Test #8, #10, #15 (`test_profile.py`) |
+| **Role Immutability** | Users cannot edit their own role, user ID, status, or created date; managed only by Admins | Test #6, #12, #13 (`test_profile.py`) |
+| **Password Change Re-Auth** | Updating password generates new scrypt hash, clears session, and requires immediate re-login | Test #16, #21 (`test_profile.py`) |
 
 ---
 
@@ -98,6 +102,9 @@ graph TD
 | `/login`, `/signup` | Public Authentication | All (Public) | HTTP 200 Form | Redirect `/dashboard` |
 | `/logout` | Sign Out | Authenticated | Redirect `/login` | N/A |
 | `/`, `/dashboard` | Executive KPI Overview | All Authenticated | Redirect `/login` | N/A |
+| `/profile` | User Account Overview | All Authenticated | Redirect `/login` | N/A |
+| `/profile/edit` | Edit Name & Email | All Authenticated | Redirect `/login` | N/A |
+| `/profile/password` | Update Password | All Authenticated | Redirect `/login` | N/A |
 | `/products` | Catalog Browsing | All Authenticated | Redirect `/login` | N/A |
 | `/products/add`, `/edit` | Product Creation / Editing | Admin, Inventory Manager | Redirect `/login` | HTTP 403 Forbidden |
 | `/products/<id>/activate` | Catalog Lifecycle Control | Admin, Inventory Manager | Redirect `/login` | HTTP 403 Forbidden |

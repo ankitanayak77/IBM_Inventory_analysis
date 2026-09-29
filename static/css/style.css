@@ -328,16 +328,18 @@ body {
 }
 
 .user-avatar-circle {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--brand-primary);
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
 }
 
 .user-meta {
