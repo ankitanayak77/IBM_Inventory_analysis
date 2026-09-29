@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}User & Role Governance{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('dashboard') }}" style="color:inherit; text-decoration:none;">Dashboard</a>
+<span>/</span>
+<span class="breadcrumb-active">User Governance</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-header-title">System User & Role Governance</h2>
+        <p class="page-header-subtitle">Manage system accounts, assign operational roles, and enforce security policies</p>
+    </div>
+    <div class="header-tag" style="background:#eef2ff; border-color:#c7d2fe; color:#4338ca;">
+        <span>🛡️</span> Administrator View Only
+    </div>
+</div>
+
+<div class="panel-card">
+    <div class="panel-header">
+        <div>
+            <div class="panel-title">Registered Accounts ({{ users|length }})</div>
+            <div class="panel-subtitle">Role permissions: Administrator, Inventory Manager, Data Analyst, Store Associate</div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Full Name</th>
+                    <th>Email Address</th>
+                    <th>Operational Role</th>
+                    <th>Status</th>
+                    <th>Last Login</th>
+                    <th>Failed Logins</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td class="font-mono">#{{ u.user_id }}</td>
+                    <td class="font-bold">{{ u.name }}</td>
+                    <td>{{ u.email }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin_update_role', user_id=u.user_id) }}" style="display:inline-flex; align-items:center; gap:6px;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <select name="role" class="filter-select" style="padding:4px 8px; font-size:0.8rem;" onchange="this.form.submit()">
+                                <option value="Administrator" {% if u.role == 'Administrator' %}selected{% endif %}>Administrator</option>
+                                <option value="Inventory Manager" {% if u.role == 'Inventory Manager' %}selected{% endif %}>Inventory Manager</option>
+                                <option value="Data Analyst" {% if u.role == 'Data Analyst' %}selected{% endif %}>Data Analyst</option>
+                                <option value="Store Associate" {% if u.role == 'Store Associate' %}selected{% endif %}>Store Associate</option>
+                            </select>
+                        </form>
+                    </td>
+                    <td>
+                        {% if u.is_active %}
+                        <span class="status-badge status-normal" style="font-size:0.75rem;">Active</span>
+                        {% else %}
+                        <span class="status-badge status-out" style="font-size:0.75rem;">Deactivated</span>
+                        {% endif %}
+                    </td>
+                    <td class="font-mono" style="font-size:0.8rem; color:var(--text-muted);">
+                        {{ u.last_login_at[:16].replace('T', ' ') if u.last_login_at else 'Never' }}
+                    </td>
+                    <td class="font-mono" style="font-size:0.8rem; text-align:center;">
+                        {% if u.failed_login_attempts > 0 %}
+                        <span style="color:#ef4444; font-weight:600;">{{ u.failed_login_attempts }}</span>
+                        {% else %}
+                        <span style="color:#10b981;">0</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
+                        {% if u.user_id != session.get('user_id') %}
+                        <form method="POST" action="{{ url_for('admin_toggle_status', user_id=u.user_id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm {% if u.is_active %}btn-danger-outline{% else %}btn-success-outline{% endif %}">
+                                {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                            </button>
+                        </form>
+                        {% else %}
+                        <span style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">(Current Session)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

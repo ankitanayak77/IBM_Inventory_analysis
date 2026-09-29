@@ -21,7 +21,13 @@ EXPECTED_RAW_SIZES = {
 }
 
 def run_tests():
+    app.config["TESTING"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
     client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = 1
+        sess["user_name"] = "Admin User"
+        sess["user_role"] = "Administrator"
 
     print("=" * 68)
     print("STARTING TEST SUITE: PHASE 11 - INTERACTIVE DASHBOARD CHARTS")

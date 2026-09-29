@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Authentication Required (401){% endblock %}
+{% block breadcrumb %}401 Unauthorized{% endblock %}
+
+{% block content %}
+<div class="placeholder-container" style="margin-top: 40px;">
+    <div class="placeholder-icon" style="background:#fef3c7; color:#d97706;">🔒</div>
+    <h3 class="placeholder-title">Authentication Required</h3>
+    <p class="placeholder-desc">
+        You must be signed in to access this section of the Smart Inventory & Sales Analysis System. Please sign in with your credentials to proceed.
+    </p>
+    <div style="display:flex; gap:12px; margin-top:16px;">
+        <a href="{{ url_for('login', next=request.path) }}" class="btn btn-primary">Sign In &rarr;</a>
+        <a href="{{ url_for('signup') }}" class="btn btn-outline">Create Account</a>
+    </div>
+</div>
+{% endblock %}

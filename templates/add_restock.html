@@ -20,6 +20,7 @@
 
 <div class="form-card" style="max-width: 720px;">
     <form method="POST" action="{{ url_for('add_restock') }}" id="restockForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <!-- Product & Store Selection -->
         <div class="form-grid">
             <div class="form-group">

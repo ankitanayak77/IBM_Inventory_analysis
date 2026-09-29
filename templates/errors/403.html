@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Access Forbidden (403){% endblock %}
+{% block breadcrumb %}403 Forbidden{% endblock %}
+
+{% block content %}
+<div class="placeholder-container" style="margin-top: 40px;">
+    <div class="placeholder-icon" style="background:#fee2e2; color:#ef4444;">🚫</div>
+    <h3 class="placeholder-title">Access Forbidden</h3>
+    <p class="placeholder-desc">
+        Your current operational role (<strong>{{ session.get('user_role', 'Unassigned') }}</strong>) does not have authorization to access this resource or execute this administrative action.
+    </p>
+    {% if required_roles %}
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:10px 16px; margin:16px 0; font-size:0.85rem; color:#475569;">
+        <span>Required Role(s):</span>
+        {% for r in required_roles %}
+        <span class="nav-badge" style="background:#e0e7ff; color:#4338ca; margin-left:4px;">{{ r }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div style="display:flex; gap:12px; margin-top:8px;">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">&larr; Return to Dashboard</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-outline">Switch Account</a>
+    </div>
+</div>
+{% endblock %}

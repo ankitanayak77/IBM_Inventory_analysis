@@ -30,10 +30,12 @@
         </a>
         {% if product.active == 1 %}
         <form method="POST" action="{{ url_for('deactivate_product', product_id=product.product_id) }}" onsubmit="return confirm('Deactivate {{ product.product_name }}? Historical sales and inventory records will remain preserved.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-danger-outline">Deactivate</button>
         </form>
         {% else %}
         <form method="POST" action="{{ url_for('activate_product', product_id=product.product_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-success-outline">Reactivate</button>
         </form>
         {% endif %}

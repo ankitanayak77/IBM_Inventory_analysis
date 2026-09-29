@@ -20,6 +20,7 @@
 
 <div class="form-card">
     <form method="POST" action="{{ url_for('add_product') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label class="form-label" for="product_name">
                 Product Name <span class="required">*</span>

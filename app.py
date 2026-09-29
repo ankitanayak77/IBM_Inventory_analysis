@@ -12,6 +12,7 @@ import datetime
 import io
 from pathlib import Path
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify, Response, session
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from config import Config
 import db
 from services import analytics_service, recommendation_service, dashboard_service, report_service, auth_service
@@ -23,6 +24,7 @@ def create_app(config_class=Config):
 
     # Initialize database teardown hooks
     db.init_app(app)
+    csrf = CSRFProtect(app)
 
     # Initialize authentication schema and demo users
     with app.app_context():
@@ -58,13 +60,15 @@ def create_app(config_class=Config):
             res = auth_service.authenticate_user(email, password)
             if res["success"]:
                 user = res["user"]
+                session.clear()
                 session["user_id"] = user["user_id"]
                 session["user_name"] = user["name"]
+                session["user_email"] = user["email"]
                 session["user_role"] = user["role"]
                 session.permanent = remember
                 flash(f"Welcome back, {user['name']}! Signed in as {user['role']}.", "success")
                 next_page = request.args.get("next")
-                if next_page and next_page.startswith("/"):
+                if next_page and auth_service.is_safe_url(next_page):
                     return redirect(next_page)
                 return redirect(url_for("dashboard"))
             else:
@@ -84,19 +88,20 @@ def create_app(config_class=Config):
             email = request.form.get("email")
             password = request.form.get("password")
             confirm_password = request.form.get("confirm_password")
-            role = request.form.get("role", "Analyst")
 
-            res = auth_service.register_user(name, email, password, confirm_password, role)
+            res = auth_service.register_user(name, email, password, confirm_password)
             if res["success"]:
                 user = res["user"]
+                session.clear()
                 session["user_id"] = user["user_id"]
                 session["user_name"] = user["name"]
+                session["user_email"] = user["email"]
                 session["user_role"] = user["role"]
                 flash(res["message"], "success")
                 return redirect(url_for("dashboard"))
             else:
                 flash(res["message"], "danger")
-                return render_template("signup.html", name=name, email=email, role=role), 400
+                return render_template("signup.html", name=name, email=email), 400
 
         return render_template("signup.html")
 
@@ -112,11 +117,47 @@ def create_app(config_class=Config):
         return redirect(url_for("login"))
 
     # ==========================================================
+    # ROUTES - USER & ROLE GOVERNANCE (ADMINISTRATOR ONLY)
+    # ==========================================================
+
+    @app.route("/admin/users", methods=["GET"])
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN)
+    def admin_users():
+        """User governance dashboard for system administrators."""
+        users_list = auth_service.get_all_users()
+        return render_template("admin/users.html", users=users_list)
+
+    @app.route("/admin/users/<int:user_id>/role", methods=["POST"])
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN)
+    def admin_update_role(user_id):
+        """Update operational role for a user."""
+        new_role = request.form.get("role")
+        admin_id = session.get("user_id")
+        success, msg = auth_service.update_user_role(admin_id, user_id, new_role)
+        category = "success" if success else "danger"
+        flash(msg, category)
+        return redirect(url_for("admin_users"))
+
+    @app.route("/admin/users/<int:user_id>/toggle-status", methods=["POST"])
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN)
+    def admin_toggle_status(user_id):
+        """Activate or deactivate a user account."""
+        admin_id = session.get("user_id")
+        success, msg = auth_service.toggle_user_status(admin_id, user_id)
+        category = "success" if success else "danger"
+        flash(msg, category)
+        return redirect(url_for("admin_users"))
+
+    # ==========================================================
     # ROUTES - DASHBOARD
     # ==========================================================
 
     @app.route("/")
     @app.route("/dashboard")
+    @auth_service.login_required
     def dashboard():
         """
         Dashboard route:
@@ -219,6 +260,7 @@ def create_app(config_class=Config):
     # ==========================================================
 
     @app.route("/products")
+    @auth_service.login_required
     def products():
         """
         Product Catalog list view:
@@ -298,6 +340,8 @@ def create_app(config_class=Config):
         )
 
     @app.route("/products/add", methods=["GET", "POST"])
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER)
     def add_product():
         """Add new product to catalog."""
         cat_rows = db.query_db("SELECT DISTINCT category FROM products ORDER BY category ASC;")
@@ -380,6 +424,7 @@ def create_app(config_class=Config):
         return render_template("add_product.html", existing_categories=existing_categories)
 
     @app.route("/products/<int:product_id>")
+    @auth_service.login_required
     def product_detail(product_id):
         """View individual product details and statistics."""
         product = db.query_db("SELECT * FROM products WHERE product_id = ?;", (product_id,), one=True)
@@ -458,6 +503,8 @@ def create_app(config_class=Config):
         )
 
     @app.route("/products/<int:product_id>/edit", methods=["GET", "POST"])
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER)
     def edit_product(product_id):
         """Edit an existing product."""
         product = db.query_db("SELECT * FROM products WHERE product_id = ?;", (product_id,), one=True)
@@ -528,6 +575,8 @@ def create_app(config_class=Config):
         return render_template("edit_product.html", product=product, existing_categories=existing_categories)
 
     @app.route("/products/<int:product_id>/deactivate", methods=["POST"])
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER)
     def deactivate_product(product_id):
         """Soft-deactivate a product (active = 0). Preserves historical records."""
         product = db.query_db("SELECT * FROM products WHERE product_id = ?;", (product_id,), one=True)
@@ -546,6 +595,8 @@ def create_app(config_class=Config):
         return redirect(request.referrer or url_for("products"))
 
     @app.route("/products/<int:product_id>/activate", methods=["POST"])
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER)
     def activate_product(product_id):
         """Reactivate a previously deactivated product (active = 1)."""
         product = db.query_db("SELECT * FROM products WHERE product_id = ?;", (product_id,), one=True)
@@ -568,6 +619,7 @@ def create_app(config_class=Config):
     # ==========================================================
 
     @app.route("/inventory")
+    @auth_service.login_required
     def inventory():
         """
         Store Inventory Management & Stock Status overview.
@@ -739,6 +791,7 @@ def create_app(config_class=Config):
     # ==========================================================
 
     @app.route("/sales")
+    @auth_service.login_required
     def sales():
         """
         Sales History list view with server-side pagination and multi-column filtering.
@@ -867,6 +920,8 @@ def create_app(config_class=Config):
         )
 
     @app.route("/sales/add", methods=["GET", "POST"])
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ASSOCIATE)
     def add_sale():
         """
         Record a new store sale transaction.
@@ -1047,6 +1102,7 @@ def create_app(config_class=Config):
         )
 
     @app.route("/sales/<int:sale_id>")
+    @auth_service.login_required
     def sale_detail(sale_id):
         """View individual sale transaction details and audit log."""
         sale = db.query_db("""
@@ -1097,6 +1153,7 @@ def create_app(config_class=Config):
     # ==========================================================
 
     @app.route("/api/inventory/<int:product_id>/<int:store_id>")
+    @auth_service.login_required
     def api_inventory_lookup(product_id, store_id):
         """
         API endpoint returning current stock, pricing, and cost for a product at a store.
@@ -1141,6 +1198,7 @@ def create_app(config_class=Config):
         })
 
     @app.route("/api/analytics/product-movement")
+    @auth_service.login_required
     def api_analytics_product_movement():
         """
         API endpoint returning product velocity, movement classification, and inventory metrics.
@@ -1175,6 +1233,7 @@ def create_app(config_class=Config):
         })
 
     @app.route("/api/analytics/category-summary")
+    @auth_service.login_required
     def api_analytics_category_summary():
         """
         API endpoint returning category-level sales volumes, revenue, velocity, and movement counts.
@@ -1197,6 +1256,7 @@ def create_app(config_class=Config):
         })
 
     @app.route("/api/analytics/store-summary")
+    @auth_service.login_required
     def api_analytics_store_summary():
         """
         API endpoint returning store-level sales performance for the selected date window.
@@ -1219,6 +1279,7 @@ def create_app(config_class=Config):
         })
 
     @app.route("/api/recommendations")
+    @auth_service.login_required
     def api_recommendations():
         """
         API endpoint returning rule-based recommendations for all catalog products.
@@ -1258,6 +1319,7 @@ def create_app(config_class=Config):
         })
 
     @app.route("/api/recommendations/summary")
+    @auth_service.login_required
     def api_recommendations_summary():
         """
         API endpoint returning summary counts of rule-based recommendation signals.
@@ -1286,6 +1348,7 @@ def create_app(config_class=Config):
     # ==========================================================
 
     @app.route("/api/dashboard/sales-trend")
+    @auth_service.login_required
     def api_dashboard_sales_trend():
         """
         API Endpoint: Daily sales units trend.
@@ -1306,6 +1369,7 @@ def create_app(config_class=Config):
         return jsonify(data)
 
     @app.route("/api/dashboard/revenue-trend")
+    @auth_service.login_required
     def api_dashboard_revenue_trend():
         """
         API Endpoint: Daily calculated revenue trend (units * catalog selling price).
@@ -1326,6 +1390,7 @@ def create_app(config_class=Config):
         return jsonify(data)
 
     @app.route("/api/dashboard/category-sales")
+    @auth_service.login_required
     def api_dashboard_category_sales():
         """
         API Endpoint: Sales units and calculated revenue by product category.
@@ -1345,6 +1410,7 @@ def create_app(config_class=Config):
         return jsonify(data)
 
     @app.route("/api/dashboard/top-products")
+    @auth_service.login_required
     def api_dashboard_top_products():
         """
         API Endpoint: Top products by units sold in the selected period.
@@ -1366,6 +1432,7 @@ def create_app(config_class=Config):
         return jsonify(data)
 
     @app.route("/api/dashboard/inventory-status")
+    @auth_service.login_required
     def api_dashboard_inventory_status():
         """
         API Endpoint: Current inventory counts (NORMAL, LOW STOCK, OUT OF STOCK).
@@ -1378,6 +1445,7 @@ def create_app(config_class=Config):
         return jsonify(data)
 
     @app.route("/api/dashboard/inventory-category")
+    @auth_service.login_required
     def api_dashboard_inventory_category():
         """
         API Endpoint: Current inventory units grouped by category.
@@ -1389,6 +1457,7 @@ def create_app(config_class=Config):
         return jsonify(data)
 
     @app.route("/api/dashboard/store-sales")
+    @auth_service.login_required
     def api_dashboard_store_sales():
         """
         API Endpoint: Sales performance by store branch.
@@ -1409,6 +1478,7 @@ def create_app(config_class=Config):
         return jsonify(data)
 
     @app.route("/api/dashboard/movement-summary")
+    @auth_service.login_required
     def api_dashboard_movement_summary():
         """
         API Endpoint: Product movement distribution (FAST MOVING, NORMAL, SLOW MOVING).
@@ -1424,6 +1494,7 @@ def create_app(config_class=Config):
         return jsonify(data)
 
     @app.route("/api/dashboard/recommendation-summary")
+    @auth_service.login_required
     def api_dashboard_recommendation_summary():
         """
         API Endpoint: Counts for rule-based recommendation signals.
@@ -1445,6 +1516,8 @@ def create_app(config_class=Config):
     # ==========================================================
 
     @app.route("/restock")
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER)
     def restock():
         """
         Restock History list view with filtering and server-side pagination.
@@ -1567,6 +1640,8 @@ def create_app(config_class=Config):
         )
 
     @app.route("/restock/add", methods=["GET", "POST"])
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER)
     def add_restock():
         """
         Record a new store restock (inbound inventory replenishment).
@@ -1750,6 +1825,8 @@ def create_app(config_class=Config):
         )
 
     @app.route("/restock/<int:restock_id>")
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER)
     def restock_detail(restock_id):
         """View individual restock transaction details, before/after stock levels, and audit trail."""
         restock_rec = db.query_db("""
@@ -1811,6 +1888,8 @@ def create_app(config_class=Config):
     # ==========================================================
 
     @app.route("/analytics")
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def analytics():
         """
         Product Movement Analytics & Sales Velocity view.
@@ -1887,6 +1966,8 @@ def create_app(config_class=Config):
     # ==========================================================
 
     @app.route("/recommendations")
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def recommendations():
         """
         Rule-Based Inventory Recommendations page.
@@ -1941,6 +2022,8 @@ def create_app(config_class=Config):
     # ==========================================================
 
     @app.route("/reports")
+    @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def reports():
         """
         Analytical Reports and Power BI Export Center.
@@ -1998,6 +2081,7 @@ def create_app(config_class=Config):
 
     @app.route("/reports/export/sales-daily")
     @app.route("/reports/export/sales")
+    @auth_service.login_required
     def export_sales_daily():
         """CSV download for daily sales summary (sales_daily.csv)."""
         rows = report_service.get_sales_daily_report()
@@ -2011,6 +2095,7 @@ def create_app(config_class=Config):
 
     @app.route("/reports/export/sales-category")
     @app.route("/reports/export/category-sales")
+    @auth_service.login_required
     def export_sales_category():
         """CSV download for category sales summary (sales_category.csv)."""
         rows = report_service.get_sales_category_report()
@@ -2023,6 +2108,7 @@ def create_app(config_class=Config):
         )
 
     @app.route("/reports/export/product-movement")
+    @auth_service.login_required
     def export_product_movement():
         """CSV download for product movement classification (product_movement.csv)."""
         rows = report_service.get_product_movement_report()
@@ -2039,6 +2125,7 @@ def create_app(config_class=Config):
 
     @app.route("/reports/export/inventory-snapshot")
     @app.route("/reports/export/inventory")
+    @auth_service.login_required
     def export_inventory_snapshot():
         """CSV download for store inventory snapshot (inventory_snapshot.csv)."""
         rows = report_service.get_inventory_snapshot_report()
@@ -2054,6 +2141,7 @@ def create_app(config_class=Config):
         )
 
     @app.route("/reports/export/store-sales")
+    @auth_service.login_required
     def export_store_sales():
         """CSV download for store sales performance (store_sales.csv)."""
         rows = report_service.get_store_sales_report()
@@ -2066,6 +2154,7 @@ def create_app(config_class=Config):
         )
 
     @app.route("/reports/export/recommendations")
+    @auth_service.login_required
     def export_recommendations():
         """CSV download for inventory recommendations (recommendations.csv)."""
         rows = report_service.get_recommendation_report()
@@ -2081,6 +2170,7 @@ def create_app(config_class=Config):
         )
 
     @app.route("/reports/export/all")
+    @auth_service.login_required
     def export_all_powerbi_zip():
         """Creates a ZIP archive containing all 6 normalized CSVs + README.md for 1-click Power BI import."""
         import zipfile
@@ -2117,16 +2207,40 @@ def create_app(config_class=Config):
         )
 
     # ==========================================================
-    # ERROR HANDLERS
+    # ERROR HANDLERS (401, 403, 404, 500, CSRFError)
     # ==========================================================
+
+    @app.errorhandler(401)
+    def unauthorized(e):
+        if request.path.startswith("/api/") or request.headers.get("Accept") == "application/json":
+            return jsonify({"error": "Unauthorized", "message": "Authentication required."}), 401
+        return render_template("errors/401.html"), 401
+
+    @app.errorhandler(403)
+    def forbidden(e):
+        if request.path.startswith("/api/") or request.headers.get("Accept") == "application/json":
+            return jsonify({"error": "Forbidden", "message": "You do not have permission to access this resource."}), 403
+        return render_template("errors/403.html"), 403
 
     @app.errorhandler(404)
     def page_not_found(e):
+        if request.path.startswith("/api/") or request.headers.get("Accept") == "application/json":
+            return jsonify({"error": "Not Found", "message": "The requested resource was not found."}), 404
         return render_template("errors/404.html"), 404
 
     @app.errorhandler(500)
     def internal_server_error(e):
+        if request.path.startswith("/api/") or request.headers.get("Accept") == "application/json":
+            return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred."}), 500
         return render_template("errors/500.html"), 500
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        if request.path.startswith("/api/") or request.headers.get("Accept") == "application/json":
+            return jsonify({"error": "Bad Request", "message": "CSRF token missing or invalid."}), 400
+        flash("Your security token has expired or is invalid. Please refresh and try again.", "danger")
+        return render_template("errors/401.html", csrf_error=True), 400
+
 
     return app
 

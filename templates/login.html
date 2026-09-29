@@ -17,26 +17,37 @@
             <p class="auth-subtitle">Sign in to your Smart Inventory & Analytics account</p>
         </div>
 
-        <!-- Demo Accounts Quick Fill -->
+        {% if config.DEMO_ACCOUNTS_ENABLED %}
+        <!-- Development / Demo Quick Access -->
         <div class="demo-accounts-card">
             <div class="demo-accounts-title">
-                <span>⚡</span> Quick Demo Sign-In
+                <span>⚡</span> Development & Evaluation Quick-Access
             </div>
             <div class="demo-btn-group">
-                <button type="button" class="demo-btn" onclick="fillDemo('admin@inventory.com', 'Admin@123')">
+                <button type="button" class="demo-btn" onclick="fillDemo('admin@inventory.com', '{{ config.DEMO_ADMIN_PASSWORD }}')">
                     <strong>Admin</strong> (admin@inventory.com)
                 </button>
-                <button type="button" class="demo-btn" onclick="fillDemo('manager@inventory.com', 'Manager@123')">
+                <button type="button" class="demo-btn" onclick="fillDemo('manager@inventory.com', '{{ config.DEMO_MANAGER_PASSWORD }}')">
                     <strong>Manager</strong> (manager@inventory.com)
                 </button>
-                <button type="button" class="demo-btn" onclick="fillDemo('analyst@inventory.com', 'Analyst@123')">
+                <button type="button" class="demo-btn" onclick="fillDemo('analyst@inventory.com', '{{ config.DEMO_ANALYST_PASSWORD }}')">
                     <strong>Analyst</strong> (analyst@inventory.com)
                 </button>
+                <button type="button" class="demo-btn" onclick="fillDemo('associate@inventory.com', '{{ config.DEMO_ASSOCIATE_PASSWORD }}')">
+                    <strong>Associate</strong> (associate@inventory.com)
+                </button>
+            </div>
+            <div style="font-size:0.68rem; color:#64748b; margin-top:6px; font-style:italic;">
+                * Configured via environment variables for local testing. Hidden in production.
             </div>
         </div>
+        {% endif %}
 
         <!-- Login Form -->
         <form method="POST" action="{{ url_for('login', next=request.args.get('next', '')) }}" id="loginForm" class="auth-form">
+            <!-- CSRF Protection Token -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
             <div class="form-group">
                 <label class="form-label" for="email">
                     Work Email <span class="required">*</span>
@@ -50,6 +61,7 @@
                         class="form-control" 
                         placeholder="you@company.com" 
                         value="{{ email if email else '' }}"
+                        autocomplete="email"
                         required
                         autofocus
                     >
@@ -61,7 +73,6 @@
                     <label class="form-label" for="password">
                         Password <span class="required">*</span>
                     </label>
-                    <span class="form-help-inline" style="font-size:0.75rem; color:var(--text-muted);">Min. 6 characters</span>
                 </div>
                 <div class="input-with-icon">
                     <span class="input-icon">🔒</span>
@@ -71,9 +82,10 @@
                         name="password" 
                         class="form-control" 
                         placeholder="Enter your password" 
+                        autocomplete="current-password"
                         required
                     >
-                    <button type="button" class="password-toggle" onclick="togglePassword('password', this)" title="Show/Hide Password">
+                    <button type="button" class="password-toggle" onclick="togglePassword('password', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
                         👁️
                     </button>
                 </div>
@@ -82,7 +94,7 @@
             <div class="form-row-auth">
                 <label class="checkbox-label">
                     <input type="checkbox" name="remember" value="1" checked>
-                    <span>Keep me signed in</span>
+                    <span>Keep me signed in on this device</span>
                 </label>
             </div>
 
@@ -93,8 +105,8 @@
 
         <!-- Auth Footer Switch -->
         <div class="auth-footer">
-            <span>Don't have an account yet?</span>
-            <a href="{{ url_for('signup') }}" class="auth-link">Create Account</a>
+            <span>New user?</span>
+            <a href="{{ url_for('signup') }}" class="auth-link">Create an Account</a>
         </div>
     </div>
 </div>
@@ -120,7 +132,7 @@
 
 .auth-header {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
 }
 
 .auth-brand-icon {
@@ -147,12 +159,12 @@
     border: 1px dashed #cbd5e1;
     border-radius: var(--radius-md);
     padding: 12px 14px;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
 }
 
 .demo-accounts-title {
-    font-size: 0.76rem;
-    font-weight: 600;
+    font-size: 0.74rem;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: #475569;
@@ -164,7 +176,7 @@
 
 .demo-btn-group {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 6px;
 }
 
@@ -172,15 +184,15 @@
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: var(--radius-sm);
-    padding: 6px 10px;
-    font-size: 0.78rem;
+    padding: 6px 8px;
+    font-size: 0.76rem;
     color: #334155;
     cursor: pointer;
     text-align: left;
     transition: all 0.15s ease;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .demo-btn:hover {
@@ -303,13 +315,12 @@ function fillDemo(email, password) {
     if (emailInput && pwInput) {
         emailInput.value = email;
         pwInput.value = password;
-        // Visual feedback highlight
         emailInput.style.backgroundColor = '#f0fdf4';
         pwInput.style.backgroundColor = '#f0fdf4';
         setTimeout(() => {
             emailInput.style.backgroundColor = '';
             pwInput.style.backgroundColor = '';
-        }, 600);
+        }, 500);
     }
 }
 

@@ -6,7 +6,8 @@
 [![SQLite](https://img.shields.io/badge/Database-SQLite_WAL-003B57?style=flat&logo=sqlite&logoColor=white)](https://sqlite.org)
 [![Chart.js](https://img.shields.io/badge/Visualizations-Chart.js_4.4-FF6384?style=flat&logo=chartdotjs&logoColor=white)](https://chartjs.org)
 [![Power BI](https://img.shields.io/badge/BI_Modeling-Power_BI_PBIP-F2C811?style=flat&logo=powerbi&logoColor=black)](https://powerbi.microsoft.com)
-[![Test Suite](https://img.shields.io/badge/Automated_Tests-147%2F147_Passed-10B981?style=flat)](scripts/)
+[![Test Suite](https://img.shields.io/badge/Automated_Tests-12%2F12_Suites_Passed-10B981?style=flat)](scripts/run_all_regressions.py)
+[![Security Auth](https://img.shields.io/badge/Security_Auth-25%2F25_Passed-blue?style=flat)](scripts/test_auth.py)
 
 ---
 
@@ -363,10 +364,44 @@ http://127.0.0.1:5000
 
 ---
 
-## 24. How to Run All Tests
+## 24. Enterprise Authentication & Role-Based Access Control (RBAC)
 
-To run the complete automated test suite across all project phases:
+The application features a production-hardened authentication architecture designed for enterprise security and multi-role operations:
+
+### Security Highlights
+- **Password Security:** Passwords hashed with PBKDF2-SHA256 (Werkzeug) with minimum 8 characters, character variety rules, and a common weak password blacklist. Plaintext passwords are never stored or logged.
+- **Least-Privilege Public Registration:** Public self-registration (`/signup`) unconditionally assigns the least-privileged **Store Associate** role. Administrative escalation is strictly barred.
+- **Role Hierarchy & Governance:** Four operational roles enforced server-side via `@login_required` and `@role_required(...)`:
+  - `Administrator`: Full access, user governance (`/admin/users`), role management, account activation.
+  - `Inventory Manager`: Master catalog, inbound restocking, physical inventory, POS transactions, analytics, reports.
+  - `Data Analyst`: Executive dashboard, velocity analytics, recommendation engine, reporting previews, and Power BI datasets.
+  - `Store Associate`: Day-to-day POS checkout operations and physical stock lookup.
+- **CSRF Protection:** State-changing POST requests across all modules are protected by `Flask-WTF` (`CSRFProtect`).
+- **Brute-Force & Abuse Defense:** Accounts are temporarily locked for 15 minutes following 5 consecutive failed sign-in attempts (`locked_until`). Timing attacks are mitigated via dummy hash checks.
+- **Session Security:** `SESSION_COOKIE_HTTPONLY = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`, configurable `Secure` cookie flag for HTTPS, explicit 7-day session lifetime, and session fixation defense via `session.clear()`.
+- **Branded Error Handling:** Custom branded pages for `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, and `500 Server Error`.
+
+### Development & Demo Credentials
+For local development and testing, demo credentials can be configured via environment variables with safe defaults:
+- **System Administrator:** `admin@inventory.com` (Default dev pass: `AdminDev@2026`)
+- **Inventory Manager:** `manager@inventory.com` (Default dev pass: `ManagerDev@2026`)
+- **Data Analyst:** `analyst@inventory.com` (Default dev pass: `AnalystDev@2026`)
+- **Store Associate:** `associate@inventory.com` (Default dev pass: `AssociateDev@2026`)
+
+*Note: In production deployments, demo accounts must be seeded via secure environment variables or created via administrative governance.*
+
+---
+
+## 25. How to Run All Tests
+
+To run the complete automated test suite across all 12 development and security phases in one command:
 ```bash
+python scripts/run_all_regressions.py
+```
+
+Or execute individual test suites:
+```bash
+# Core Domain Regressions (Phases 6–12)
 python scripts/test_phase6.py
 python scripts/test_phase7.py
 python scripts/test_phase8.py
@@ -374,15 +409,22 @@ python scripts/test_phase9.py
 python scripts/test_phase10.py
 python scripts/test_phase11.py
 python scripts/test_phase12.py
+
+# Power BI Data Model & Measures (Phase 13)
 python scripts/validate_phase13_model.py
 python scripts/test_phase13.py
+
+# Route Presentation & Business Workflow (Phase 14)
 python scripts/test_route_validation.py
 python scripts/test_business_workflow.py
+
+# Enterprise Authentication & RBAC Suite
+python scripts/test_auth.py
 ```
 
 ---
 
-## 25. Expected Baseline Validation Numbers
+## 26. Expected Baseline Validation Numbers
 
 All analytical calculations, test suites, and Power BI models must reconcile to these exact baseline numbers:
 
@@ -406,14 +448,14 @@ All analytical calculations, test suites, and Power BI models must reconcile to 
 
 ---
 
-## 26. Folder Structure
+## 27. Folder Structure
 
 ```text
 inventory-analysis/
 ├── app.py                      # Main Flask application factory & routing
 ├── config.py                   # Environment configuration & app settings
 ├── db.py                       # SQLite database connection & teardown hooks
-├── requirements.txt            # Python dependencies
+├── requirements.txt            # Python dependencies (Flask, Werkzeug, Flask-WTF)
 ├── README.md                   # Comprehensive project documentation
 ├── .gitignore                  # Git commit exclusions
 ├── database/
@@ -425,6 +467,7 @@ inventory-analysis/
 │       ├── inventory.csv
 │       └── sales.csv
 ├── docs/                       # Technical architecture & verification docs
+│   ├── authentication_verification_report.md
 │   ├── powerbi_report.md
 │   └── final_verification_report.md
 ├── exports/
@@ -450,10 +493,11 @@ inventory-analysis/
 │       ├── definition.pbir
 │       └── report.json
 ├── services/                   # Modular business logic services
-│   ├── analytics_service.py
-│   ├── recommendation_service.py
-│   ├── dashboard_service.py
-│   └── report_service.py
+│   ├── auth_service.py         # Authentication, PBKDF2 hashing, RBAC, abuse defense
+│   ├── analytics_service.py    # Sales velocity & percentile movement classification
+│   ├── recommendation_service.py # Rule-based inventory recommendation engine
+│   ├── dashboard_service.py    # SQL aggregations for interactive Chart.js widgets
+│   └── report_service.py       # Reporting previews & CSV export pipeline
 ├── static/
 │   ├── css/
 │   │   └── style.css           # Core design system styles
@@ -464,6 +508,8 @@ inventory-analysis/
 │       └── chart.umd.min.js    # Vendored Chart.js 4.4.0 library
 ├── templates/                  # Jinja2 presentation templates
 │   ├── base.html
+│   ├── login.html              # Hardened Sign-In with remember me & eye toggle
+│   ├── signup.html             # Safe Sign-Up with strength meter & checklist
 │   ├── dashboard.html
 │   ├── products.html
 │   ├── add_product.html
@@ -479,9 +525,13 @@ inventory-analysis/
 │   ├── analytics.html
 │   ├── recommendations.html
 │   ├── reports.html
+│   ├── admin/
+│   │   └── users.html          # Administrator User & Role Governance
 │   └── errors/
-│       ├── 404.html
-│       └── 500.html
+│       ├── 401.html            # Branded Unauthorized Error Page
+│       ├── 403.html            # Branded Forbidden Error Page
+│       ├── 404.html            # Branded Page Not Found
+│       └── 500.html            # Branded Server Error
 └── scripts/                    # Test suites & CLI automation utilities
     ├── init_db.py
     ├── data_cleaning.py
@@ -497,20 +547,24 @@ inventory-analysis/
     ├── validate_phase13_model.py
     ├── test_phase13.py
     ├── test_route_validation.py
-    └── test_business_workflow.py
+    ├── test_business_workflow.py
+    ├── test_auth.py            # 25 Enterprise security & RBAC tests
+    ├── test_auth_browser_headless.py # Headless Chrome browser renderer
+    └── run_all_regressions.py  # Master test runner (12/12 suites)
 ```
 
 ---
 
-## 27. Known Limitations
+## 28. Known Limitations
 
 1. **Headless BI Validation Scope:** Visual rendering inside the Power BI Desktop GUI was not performed because this verification environment runs headlessly via CLI. The project supplies complete data model definitions, Star Schema single-direction relationships, M transformations, 23 DAX measures, and `.pbip` schema files ready for immediate opening in Power BI Desktop.
 2. **Current vs. Historical Inventory:** Store inventory stock balances represent the live current operational snapshot. Historical daily stock balances are not reconstructed from sales dates.
 3. **Calculated Revenue:** Revenue is estimated using units &times; catalog retail price rather than cashier register receipt pricing.
+4. **Session Scope:** Sessions rely on signed HTTPOnly cookies (`SECRET_KEY`). Distributed multi-node scaling would use Redis. MFA/TOTP and email password resets are deferred production opportunities.
 
 ---
 
-## 28. Project Status
+## 29. Project Status
 
-**PHASES 1–14 FULLY COMPLETE, HARDENED, AND VERIFIED.**
-All 147 test assertions pass. All data models, web interfaces, and documentation are synchronized with zero regressions.
+**AUTHENTICATION UPGRADE & PHASES 1–14 FULLY COMPLETE, HARDENED, AND VERIFIED.**  
+All 12 automated test suites (172+ assertions) pass with 100% green status. All data models, web interfaces, authentication controls, and documentation are synchronized with zero regressions.

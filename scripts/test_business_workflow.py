@@ -36,7 +36,13 @@ def test_workflow():
     print("=" * 68)
 
     cleanup_test_data()
+    app.config["TESTING"] = True
+    app.config["WTF_CSRF_ENABLED"] = False
     client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = 1
+        sess["user_name"] = "Admin User"
+        sess["user_role"] = "Administrator"
 
     test_sale_id = None
     test_restock_id = None
