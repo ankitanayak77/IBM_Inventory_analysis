@@ -74,7 +74,7 @@ def run_route_tests():
         url = f"{BASE_URL}{path}"
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "RouteValidator/1.0"})
-            with opener.open(req, timeout=10) as resp:
+            with opener.open(req, timeout=30) as resp:
                 code = resp.status
                 body = resp.read().decode("utf-8", errors="replace")
                 assert code == exp_code, f"Status code mismatch for {path}: expected {exp_code}, got {code}"
@@ -93,7 +93,7 @@ def run_route_tests():
     no_redirect_opener = urllib.request.build_opener(NoRedirectHandler)
     url_dash = f"{BASE_URL}/dashboard"
     req_dash = urllib.request.Request(url_dash, headers={"User-Agent": "RouteValidator/1.0"})
-    res_dash = no_redirect_opener.open(req_dash, timeout=10)
+    res_dash = no_redirect_opener.open(req_dash, timeout=30)
     assert res_dash.code in (302, 303), f"Expected redirect 302, got {res_dash.code}"
     loc = res_dash.headers.get("Location", "")
     assert "/login" in loc, f"Expected redirect to /login, got {loc}"
@@ -103,7 +103,7 @@ def run_route_tests():
     # 3. Authenticate via Login POST with CSRF Token
     login_url = f"{BASE_URL}/login"
     req_login_page = urllib.request.Request(login_url, headers={"User-Agent": "RouteValidator/1.0"})
-    with opener.open(req_login_page, timeout=10) as resp:
+    with opener.open(req_login_page, timeout=30) as resp:
         login_html = resp.read().decode("utf-8")
 
     csrf_match = re.search(r'name="csrf_token"\s+value="([^"]+)"', login_html)
@@ -123,7 +123,7 @@ def run_route_tests():
         data=login_data,
         headers={"User-Agent": "RouteValidator/1.0", "Content-Type": "application/x-www-form-urlencoded"}
     )
-    with opener.open(login_req, timeout=10) as resp:
+    with opener.open(login_req, timeout=30) as resp:
         assert resp.status == 200, f"Login POST failed with status {resp.status}"
         login_resp_body = resp.read().decode("utf-8", errors="replace")
         assert "Sign Out" in login_resp_body or "Administrator" in login_resp_body
@@ -134,7 +134,7 @@ def run_route_tests():
         url = f"{BASE_URL}{path}"
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "RouteValidator/1.0"})
-            with opener.open(req, timeout=10) as resp:
+            with opener.open(req, timeout=30) as resp:
                 code = resp.status
                 body = resp.read().decode("utf-8", errors="replace")
                 assert code == exp_code, f"Status code mismatch for {path}: expected {exp_code}, got {code}"

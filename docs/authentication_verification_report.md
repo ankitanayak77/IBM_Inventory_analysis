@@ -25,7 +25,7 @@ The authentication sub-system is organized in a clean service-oriented architect
 │                        AUTHENTICATION & RBAC LAYER                     │
 ├────────────────────────────────────────────────────────────────────────┤
 │  Client / Browser       Flask Routing               auth_service.py    │
-│  * CSRF Protected  ──►  * @login_required     ──►   * PBKDF2-SHA256    │
+│  * CSRF Protected  ──►  * @login_required     ──►   * scrypt Hashing   │
 │  * Session Cookie       * @role_required            * Brute Lockout    │
 │  * Dynamic Meter        * HTTP 401/403 Pages        * User Governance  │
 └──────────────────────────────────┬─────────────────────────────────────┘
@@ -38,7 +38,7 @@ The authentication sub-system is organized in a clean service-oriented architect
 │  * user_id (PK AUTOINCREMENT)                                          │
 │  * name (TEXT NOT NULL)                                                │
 │  * email (TEXT UNIQUE COLLATE NOCASE)                                  │
-│  * password_hash (TEXT NOT NULL, Werkzeug PBKDF2-SHA256)               │
+│  * password_hash (TEXT NOT NULL, Werkzeug scrypt:32768:8:1)            │
 │  * role (TEXT NOT NULL DEFAULT 'Store Associate')                      │
 │  * is_active (INTEGER NOT NULL DEFAULT 1)                              │
 │  * failed_login_attempts (INTEGER NOT NULL DEFAULT 0)                  │
@@ -61,7 +61,7 @@ The authentication sub-system is organized in a clean service-oriented architect
 
 | Security Control | Implementation Mechanism | Verification Test |
 | :--- | :--- | :--- |
-| **Password Storage** | PBKDF2-SHA256 via Werkzeug (`generate_password_hash`); plaintext is never stored or logged | Test #9 (`test_auth.py`) |
+| **Password Storage** | **scrypt** (`scrypt:32768:8:1`) via Werkzeug (`generate_password_hash`); plaintext is never stored or logged | Test #9 (`test_auth.py`) |
 | **Public Role Restriction** | Public sign-up unconditionally assigns least-privileged `Store Associate`; ignores client-supplied `role` | Test #24, #25 |
 | **Password Strength Policy** | Min 8 chars, letters + numbers/symbols, weak password blacklist (rejects common patterns) | Test #5, #6 |
 | **User Enumeration Defense** | Uniform generic error message (*"Invalid email or password."*) with dummy hash timing defense | Test #11, #12, #13 |
@@ -131,7 +131,7 @@ STARTING TEST SUITE: ENTERPRISE AUTHENTICATION & RBAC SECURITY (25 TESTS)
 [6/25] Sign up common weak password rejected by blacklist: PASS
 [7/25] Sign up password mismatch rejected: PASS
 [8/25] Email normalization to lowercase in storage: PASS
-[9/25] Passwords stored only as secure PBKDF2/scrypt hashes: PASS
+[9/25] Passwords stored only as secure scrypt hashes (Werkzeug default): PASS
 [10/25] Login success establishes session, sets remember-me, and updates last_login_at: PASS
 [11/25] Login with incorrect password returns generic error: PASS
 [12/25] Login with nonexistent email returns generic error: PASS
@@ -217,7 +217,7 @@ ALL 12 REGRESSION SUITES PASSED CLEANLY! (100% SUCCESS)
 
 Google Chrome (headless) validated visual rendering and DOM tree generation across key authentication surfaces:
 
-1. **`/login` (`shot_auth_login.png` — 121,789 bytes):** Clean container, branding icon, email input with autofocus, password field with eye toggle, "Keep me signed in on this device" checkbox, primary CTA, and quick-fill demo cards for local evaluation.
+1. **`/login` (`shot_auth_login.png`):** Clean container, branding icon, email input with autofocus, password field with eye toggle, "Keep me signed in on this device" checkbox, and primary CTA. Developer/demo credentials block removed for a professional production presentation.
 2. **`/signup` (`shot_auth_signup.png` — 129,239 bytes):** Role governance callout, Full Name, Work Email, Password, Confirm Password, dynamic strength meter, live 3-point requirement checklist, and no public role dropdown.
 3. **`/dashboard` Unauthenticated (`shot_auth_unauth_redirect.png` — 128,495 bytes):** Validated seamless redirect from `/dashboard` to `/login?next=%2Fdashboard`.
 4. **`/admin/users`:** Verified HTTP 403 Forbidden rendering when accessed by Store Associate accounts, displaying required administrative roles.
@@ -259,6 +259,6 @@ AUTHENTICATION UPGRADE COMPLETE
 - Regression Status:      12/12 Master Test Suites Passed (100% Green)
 - Browser Status:         Headless Chrome Validated (Login, Signup, Redirects, 403)
 - Database Counts:        Products: 35 | Stores: 50 | Inventory: 1,750 | Sales: 829,262 | Users: 4
-- Security Controls:      PBKDF2-SHA256, CSRFProtect, Brute-Force Lockout, RBAC Server Decorators
+- Security Controls:      scrypt (Werkzeug default), CSRFProtect, Brute-Force Lockout, RBAC Server Decorators
 - Known Limitations:      Documented (No SMTP reset, no MFA, signed cookie sessions)
 ```

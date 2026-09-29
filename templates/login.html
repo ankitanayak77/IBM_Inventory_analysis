@@ -17,31 +17,7 @@
             <p class="auth-subtitle">Sign in to your Smart Inventory & Analytics account</p>
         </div>
 
-        {% if config.DEMO_ACCOUNTS_ENABLED %}
-        <!-- Development / Demo Quick Access -->
-        <div class="demo-accounts-card">
-            <div class="demo-accounts-title">
-                <span>⚡</span> Development & Evaluation Quick-Access
-            </div>
-            <div class="demo-btn-group">
-                <button type="button" class="demo-btn" onclick="fillDemo('admin@inventory.com', '{{ config.DEMO_ADMIN_PASSWORD }}')">
-                    <strong>Admin</strong> (admin@inventory.com)
-                </button>
-                <button type="button" class="demo-btn" onclick="fillDemo('manager@inventory.com', '{{ config.DEMO_MANAGER_PASSWORD }}')">
-                    <strong>Manager</strong> (manager@inventory.com)
-                </button>
-                <button type="button" class="demo-btn" onclick="fillDemo('analyst@inventory.com', '{{ config.DEMO_ANALYST_PASSWORD }}')">
-                    <strong>Analyst</strong> (analyst@inventory.com)
-                </button>
-                <button type="button" class="demo-btn" onclick="fillDemo('associate@inventory.com', '{{ config.DEMO_ASSOCIATE_PASSWORD }}')">
-                    <strong>Associate</strong> (associate@inventory.com)
-                </button>
-            </div>
-            <div style="font-size:0.68rem; color:#64748b; margin-top:6px; font-style:italic;">
-                * Configured via environment variables for local testing. Hidden in production.
-            </div>
-        </div>
-        {% endif %}
+
 
         <!-- Login Form -->
         <form method="POST" action="{{ url_for('login', next=request.args.get('next', '')) }}" id="loginForm" class="auth-form">
@@ -154,56 +130,7 @@
     margin: 0;
 }
 
-.demo-accounts-card {
-    background: #f8fafc;
-    border: 1px dashed #cbd5e1;
-    border-radius: var(--radius-md);
-    padding: 12px 14px;
-    margin-bottom: 20px;
-}
 
-.demo-accounts-title {
-    font-size: 0.74rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #475569;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.demo-btn-group {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-}
-
-.demo-btn {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: var(--radius-sm);
-    padding: 6px 8px;
-    font-size: 0.76rem;
-    color: #334155;
-    cursor: pointer;
-    text-align: left;
-    transition: all 0.15s ease;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.demo-btn:hover {
-    background: #eef2ff;
-    border-color: #c7d2fe;
-    color: #4338ca;
-}
-
-.demo-btn strong {
-    color: #1e293b;
-}
 
 .auth-form {
     display: flex;
@@ -309,20 +236,7 @@
 </style>
 
 <script>
-function fillDemo(email, password) {
-    const emailInput = document.getElementById('email');
-    const pwInput = document.getElementById('password');
-    if (emailInput && pwInput) {
-        emailInput.value = email;
-        pwInput.value = password;
-        emailInput.style.backgroundColor = '#f0fdf4';
-        pwInput.style.backgroundColor = '#f0fdf4';
-        setTimeout(() => {
-            emailInput.style.backgroundColor = '';
-            pwInput.style.backgroundColor = '';
-        }, 500);
-    }
-}
+
 
 function togglePassword(inputId, btn) {
     const input = document.getElementById(inputId);

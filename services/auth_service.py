@@ -1,7 +1,7 @@
 """
 Enterprise Authentication & Role-Based Access Control (RBAC) Service
 ---------------------------------------------------------------------
-Provides secure PBKDF2-SHA256 password hashing, brute-force abuse protection,
+Provides secure scrypt password hashing (Werkzeug default), brute-force abuse protection,
 normalized registration, session management, safe redirect validation,
 and role authorization for the Smart Inventory & Sales Analysis System.
 """
@@ -189,7 +189,7 @@ def authenticate_user(email, password):
 
     # Generic timing-attack defense: run dummy hash comparison if user not found
     if not user_row:
-        check_password_hash("pbkdf2:sha256:100000$dummy$dummyhashvaluehere", password)
+        check_password_hash("scrypt:32768:8:1$pWrlq0Jk38yxKdiG$a0c7b3699a70ce5e1a14b06dd06c5837067d447129899de6cbd45d5de21808335a8a67b70e1d58eeda7a5a4f11a7b85cb3346c90a26d060d36df60a544446db2", password)
         return {"success": False, "message": "Invalid email or password.", "user": None}
 
     user_id = user_row["user_id"]

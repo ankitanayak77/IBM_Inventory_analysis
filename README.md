@@ -369,7 +369,7 @@ http://127.0.0.1:5000
 The application features a production-hardened authentication architecture designed for enterprise security and multi-role operations:
 
 ### Security Highlights
-- **Password Security:** Passwords hashed with PBKDF2-SHA256 (Werkzeug) with minimum 8 characters, character variety rules, and a common weak password blacklist. Plaintext passwords are never stored or logged.
+- **Password Security:** Passwords hashed using **scrypt** (Werkzeug 3.0+ default key derivation algorithm: `scrypt:32768:8:1`) with minimum 8 characters, character variety rules, and a common weak password blacklist. Plaintext passwords are never stored or logged.
 - **Least-Privilege Public Registration:** Public self-registration (`/signup`) unconditionally assigns the least-privileged **Store Associate** role. Administrative escalation is strictly barred.
 - **Role Hierarchy & Governance:** Four operational roles enforced server-side via `@login_required` and `@role_required(...)`:
   - `Administrator`: Full access, user governance (`/admin/users`), role management, account activation.
@@ -381,14 +381,19 @@ The application features a production-hardened authentication architecture desig
 - **Session Security:** `SESSION_COOKIE_HTTPONLY = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`, configurable `Secure` cookie flag for HTTPS, explicit 7-day session lifetime, and session fixation defense via `session.clear()`.
 - **Branded Error Handling:** Custom branded pages for `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, and `500 Server Error`.
 
-### Development & Demo Credentials
-For local development and testing, demo credentials can be configured via environment variables with safe defaults:
-- **System Administrator:** `admin@inventory.com` (Default dev pass: `AdminDev@2026`)
-- **Inventory Manager:** `manager@inventory.com` (Default dev pass: `ManagerDev@2026`)
-- **Data Analyst:** `analyst@inventory.com` (Default dev pass: `AnalystDev@2026`)
-- **Store Associate:** `associate@inventory.com` (Default dev pass: `AssociateDev@2026`)
+### Development / Demo Accounts
 
-*Note: In production deployments, demo accounts must be seeded via secure environment variables or created via administrative governance.*
+For local demonstration, evaluation, and automated testing only, demo accounts are pre-seeded with development passwords configurable via environment variables:
+
+| Role | Email | Default Dev Password | Scope of Access |
+| :--- | :--- | :--- | :--- |
+| **System Administrator** | `admin@inventory.com` | `AdminDev@2026` | Full access + User & Role Governance (`/admin/users`) |
+| **Inventory Manager** | `manager@inventory.com` | `ManagerDev@2026` | Catalog, Stock, Restock POS, Analytics & Reports |
+| **Data Analyst** | `analyst@inventory.com` | `AnalystDev@2026` | Executive Dashboard, Velocity Analytics, Reports & BI Exports |
+| **Store Associate** | `associate@inventory.com` | `AssociateDev@2026` | POS Transactions, Physical Stock Lookup |
+
+> [!WARNING]
+> These demo credentials are strictly for local evaluation and regression testing. They are not displayed on the user-facing sign-in page. In production deployments, demo accounts must be deleted or secured with strong environment-provided secrets.
 
 ---
 
@@ -493,7 +498,7 @@ inventory-analysis/
 │       ├── definition.pbir
 │       └── report.json
 ├── services/                   # Modular business logic services
-│   ├── auth_service.py         # Authentication, PBKDF2 hashing, RBAC, abuse defense
+│   ├── auth_service.py         # Authentication, scrypt hashing, RBAC, abuse defense
 │   ├── analytics_service.py    # Sales velocity & percentile movement classification
 │   ├── recommendation_service.py # Rule-based inventory recommendation engine
 │   ├── dashboard_service.py    # SQL aggregations for interactive Chart.js widgets

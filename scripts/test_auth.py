@@ -161,8 +161,9 @@ def run_tests():
         c = conn.cursor()
         pw_hash = c.execute("SELECT password_hash FROM users WHERE email = 'case_test_user@inventory.com';").fetchone()[0]
         assert not pw_hash.startswith("SecurePassword"), "Plaintext password detected in database!"
+        assert pw_hash.startswith("scrypt:"), f"Expected scrypt hash, got: {pw_hash[:20]}"
         assert check_password_hash(pw_hash, "SecurePassword@2026") is True
-    print("[9/25] Passwords stored only as secure PBKDF2/scrypt hashes: PASS")
+    print("[9/25] Passwords stored only as secure scrypt hashes (Werkzeug default): PASS")
 
     # 10. Login Success
     admin_pw = app.config.get("DEMO_ADMIN_PASSWORD", "AdminDev@2026")
