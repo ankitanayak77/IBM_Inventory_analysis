@@ -1,0 +1,563 @@
+{% extends "base.html" %}
+
+{% block title %}Analytical Reports & Power BI Exports{% endblock %}
+{% block breadcrumb %}Reports &amp; Exports{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h2 class="page-header-title">Analytical Reports &amp; Power BI Export Center</h2>
+        <p class="page-header-subtitle">Standardized tabular datasets, audit previews, and automated Power BI CSV pipeline exports</p>
+    </div>
+    <div style="display:flex; gap:10px;">
+        <a href="{{ url_for('export_all_powerbi_zip') }}" class="btn btn-primary" title="Download all 6 normalized CSVs + README in a ZIP archive">
+            📦 Download All Datasets (.ZIP)
+        </a>
+    </div>
+</div>
+
+<!-- Analytical Architecture Notice -->
+<div class="semantic-notice info" style="margin-bottom: 24px;">
+    <div class="notice-icon">💡</div>
+    <div class="notice-body">
+        <h4>Analytical Data Semantics &amp; Model Distinction</h4>
+        <p>
+            <strong>Historical Baseline:</strong> Sales reports cover <strong>638 active trading days</strong> (2017-01-01 to 2018-09-30). Revenue figures represent <em>Calculated Revenue</em> computed at catalog retail selling price (<code>SUM(quantity &times; selling_price)</code>).<br>
+            <strong>Current Application Inventory:</strong> Stock metrics and inventory snapshots describe the <em>live SQLite inventory state</em> across 50 branches. They are not projected backwards as historical daily balances. Valuation is calculated at catalog selling price.
+        </p>
+    </div>
+</div>
+
+<!-- Summary KPI Cards -->
+<div class="kpi-grid" style="margin-bottom: 24px;">
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Historical Units Sold</span>
+            <div class="kpi-icon-wrap icon-blue">📦</div>
+        </div>
+        <div class="kpi-value">{{ "{:,}".format(summary_kpis.total_units_sold) }}</div>
+        <div class="kpi-footer">
+            <span>{{ "{:,}".format(summary_kpis.total_transactions) }} transactions</span>
+            <span class="kpi-badge badge-indigo">638 Days</span>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Calculated Revenue</span>
+            <div class="kpi-icon-wrap icon-emerald">💰</div>
+        </div>
+        <div class="kpi-value">${{ "{:,.2f}".format(summary_kpis.calculated_revenue) }}</div>
+        <div class="kpi-footer">
+            <span>Catalog Baseline Prices</span>
+            <span class="kpi-badge badge-emerald">Calculated</span>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Catalog Products</span>
+            <div class="kpi-icon-wrap icon-cyan">🏷️</div>
+        </div>
+        <div class="kpi-value">{{ summary_kpis.products_analyzed }}</div>
+        <div class="kpi-footer">
+            <span>5 Product Categories</span>
+            <span class="kpi-badge badge-cyan">Active Catalog</span>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Retail Store Branches</span>
+            <div class="kpi-icon-wrap icon-purple">🏬</div>
+        </div>
+        <div class="kpi-value">{{ summary_kpis.stores_analyzed }}</div>
+        <div class="kpi-footer">
+            <span>29 Mexican Municipalities</span>
+            <span class="kpi-badge badge-indigo">50 Stores</span>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Current Stock on Hand</span>
+            <div class="kpi-icon-wrap icon-cyan">📊</div>
+        </div>
+        <div class="kpi-value">{{ "{:,}".format(summary_kpis.total_physical_stock) }}</div>
+        <div class="kpi-footer">
+            <span>{{ "{:,}".format(summary_kpis.total_inventory_records) }} Store-SKUs</span>
+            <span class="kpi-badge badge-cyan">Current Units</span>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Stock Condition Alerts</span>
+            <div class="kpi-icon-wrap icon-amber">⚠️</div>
+        </div>
+        <div class="kpi-value" style="color: #b45309;">{{ summary_kpis.low_stock_records + summary_kpis.out_of_stock_records }}</div>
+        <div class="kpi-footer">
+            <span>{{ summary_kpis.low_stock_records }} Low | {{ summary_kpis.out_of_stock_records }} Out</span>
+            <span class="kpi-badge badge-amber">Network Alerts</span>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Items Requiring Attention</span>
+            <div class="kpi-icon-wrap icon-rose">💡</div>
+        </div>
+        <div class="kpi-value" style="color: #e11d48;">{{ summary_kpis.requires_attention_count }}</div>
+        <div class="kpi-footer">
+            <span>Phase 10 Decision Signals</span>
+            <span class="kpi-badge badge-rose">Prioritized</span>
+        </div>
+    </div>
+</div>
+
+<!-- Report Navigation Tabs -->
+<div style="display:flex; gap:8px; border-bottom:2px solid var(--border-color); margin-bottom:24px; overflow-x:auto;">
+    <a href="{{ url_for('reports', tab='sales') }}" class="btn {% if active_tab == 'sales' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
+        📅 Daily Sales Summary
+    </a>
+    <a href="{{ url_for('reports', tab='category') }}" class="btn {% if active_tab == 'category' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
+        🏷️ Category Sales
+    </a>
+    <a href="{{ url_for('reports', tab='movement') }}" class="btn {% if active_tab == 'movement' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
+        ⚡ Product Movement
+    </a>
+    <a href="{{ url_for('reports', tab='store') }}" class="btn {% if active_tab == 'store' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
+        🏬 Store Performance
+    </a>
+    <a href="{{ url_for('reports', tab='inventory') }}" class="btn {% if active_tab == 'inventory' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
+        📦 Inventory Snapshot
+    </a>
+    <a href="{{ url_for('reports', tab='recommendations') }}" class="btn {% if active_tab == 'recommendations' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
+        💡 Recommendations
+    </a>
+    <a href="{{ url_for('reports', tab='export-center') }}" class="btn {% if active_tab == 'export-center' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
+        📁 Export Center
+    </a>
+</div>
+
+<!-- =====================================================================
+     TAB 1: DAILY SALES SUMMARY REPORT
+     ===================================================================== -->
+{% if active_tab == 'sales' %}
+<div class="panel-card">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">Daily Sales Summary Report</h3>
+            <p class="panel-subtitle">Aggregated transactional volume and calculated revenue per calendar trading day (Showing first 20 of {{ sales_daily_total_count }} dates)</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span class="kpi-badge badge-indigo">Grain: 1 Row / Date</span>
+            <a href="{{ url_for('export_sales_daily') }}" class="btn btn-primary btn-sm">⬇️ Export sales_daily.csv</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Sale Date</th>
+                    <th class="text-right">Units Sold</th>
+                    <th class="text-right">Transaction Count</th>
+                    <th class="text-right">Calculated Revenue ($)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in sales_daily_preview %}
+                <tr>
+                    <td class="font-mono font-bold">{{ row.sale_date }}</td>
+                    <td class="text-right font-mono font-bold">{{ "{:,}".format(row.units_sold) }}</td>
+                    <td class="text-right font-mono" style="color:var(--text-muted);">{{ "{:,}".format(row.transaction_count) }}</td>
+                    <td class="text-right font-mono font-bold" style="color:#047857;">${{ "{:,.2f}".format(row.calculated_revenue) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div style="padding:16px 20px; background:#f8fafc; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:0.82rem; color:var(--text-muted);">Preview displaying first 20 records. Full dataset contains {{ sales_daily_total_count }} daily rows.</span>
+        <a href="{{ url_for('export_sales_daily') }}" class="btn btn-outline btn-sm">Download Complete Dataset (638 Rows) &rarr;</a>
+    </div>
+</div>
+
+<!-- =====================================================================
+     TAB 2: CATEGORY SALES REPORT
+     ===================================================================== -->
+{% elif active_tab == 'category' %}
+<div class="panel-card">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">Category Sales &amp; Efficiency Report</h3>
+            <p class="panel-subtitle">Cumulative units, calculated revenue, and transaction efficiency by merchandise department</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span class="kpi-badge badge-indigo">Grain: 1 Row / Category</span>
+            <a href="{{ url_for('export_sales_category') }}" class="btn btn-primary btn-sm">⬇️ Export sales_category.csv</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Product Category</th>
+                    <th class="text-right">Total Units Sold</th>
+                    <th class="text-right">Transaction Count</th>
+                    <th class="text-right">Calculated Revenue ($)</th>
+                    <th class="text-right">Avg Units / Transaction</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in category_sales %}
+                <tr>
+                    <td><span class="kpi-badge badge-indigo" style="font-weight:700;">{{ row.category }}</span></td>
+                    <td class="text-right font-mono font-bold">{{ "{:,}".format(row.units_sold) }}</td>
+                    <td class="text-right font-mono" style="color:var(--text-muted);">{{ "{:,}".format(row.transaction_count) }}</td>
+                    <td class="text-right font-mono font-bold" style="color:#047857;">${{ "{:,.2f}".format(row.calculated_revenue) }}</td>
+                    <td class="text-right font-mono">{{ row.average_units_per_transaction }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- =====================================================================
+     TAB 3: PRODUCT MOVEMENT REPORT
+     ===================================================================== -->
+{% elif active_tab == 'movement' %}
+<div class="panel-card">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">Product Movement Classification Report</h3>
+            <p class="panel-subtitle">Empirical velocity (units/day) and 3-tier percentile classification across all 35 catalog items</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span class="kpi-badge badge-indigo">Grain: 1 Row / SKU</span>
+            <a href="{{ url_for('export_product_movement') }}" class="btn btn-primary btn-sm">⬇️ Export product_movement.csv</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>SKU ID</th>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th class="text-right">Units Sold</th>
+                    <th class="text-right">Sales Velocity</th>
+                    <th style="text-align:center;">Movement Status</th>
+                    <th class="text-right">Current Stock</th>
+                    <th class="text-right">Reorder Level</th>
+                    <th class="text-right">Approx. Coverage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in product_movement %}
+                <tr>
+                    <td class="font-mono">#{{ row.product_id }}</td>
+                    <td class="font-bold">{{ row.product_name }}</td>
+                    <td><span class="kpi-badge badge-indigo">{{ row.category }}</span></td>
+                    <td class="text-right font-mono font-bold">{{ "{:,}".format(row.units_sold) }}</td>
+                    <td class="text-right font-mono font-bold">{{ row.sales_velocity }} /d</td>
+                    <td style="text-align:center;">
+                        <span class="kpi-badge {% if row.movement_status == 'FAST MOVING' %}badge-emerald{% elif row.movement_status == 'SLOW MOVING' %}badge-amber{% else %}badge-indigo{% endif %}" style="font-weight:700;">
+                            {{ row.movement_status }}
+                        </span>
+                    </td>
+                    <td class="text-right font-mono">{{ "{:,}".format(row.current_stock) }}</td>
+                    <td class="text-right font-mono" style="color:var(--text-muted);">{{ row.reorder_level }}</td>
+                    <td class="text-right font-mono">
+                        {% if row.stock_coverage_days is not none %}
+                            <span class="kpi-badge {% if row.stock_coverage_days < 14.0 %}badge-rose{% else %}badge-cyan{% endif %}">{{ row.stock_coverage_days }} d</span>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- =====================================================================
+     TAB 4: STORE SALES PERFORMANCE REPORT
+     ===================================================================== -->
+{% elif active_tab == 'store' %}
+<div class="panel-card">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">Store Sales Performance Report</h3>
+            <p class="panel-subtitle">Total units sold, transaction count, and calculated revenue across all 50 retail store locations</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span class="kpi-badge badge-indigo">Grain: 1 Row / Store</span>
+            <a href="{{ url_for('export_store_sales') }}" class="btn btn-primary btn-sm">⬇️ Export store_sales.csv</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Store ID</th>
+                    <th>Store Name</th>
+                    <th>City</th>
+                    <th class="text-right">Units Sold</th>
+                    <th class="text-right">Transaction Count</th>
+                    <th class="text-right">Calculated Revenue ($)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in store_sales %}
+                <tr>
+                    <td class="font-mono">#{{ row.store_id }}</td>
+                    <td class="font-bold">{{ row.store_name }}</td>
+                    <td><span class="kpi-badge badge-cyan">{{ row.city }}</span></td>
+                    <td class="text-right font-mono font-bold">{{ "{:,}".format(row.units_sold) }}</td>
+                    <td class="text-right font-mono" style="color:var(--text-muted);">{{ "{:,}".format(row.transaction_count) }}</td>
+                    <td class="text-right font-mono font-bold" style="color:#047857;">${{ "{:,.2f}".format(row.calculated_revenue) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- =====================================================================
+     TAB 5: INVENTORY SNAPSHOT REPORT
+     ===================================================================== -->
+{% elif active_tab == 'inventory' %}
+<div class="panel-card">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">Current Store Inventory Snapshot</h3>
+            <p class="panel-subtitle">Physical stock on hand, status, and calculated valuation across the 50 stores &times; 35 products grid (Showing first 50 of {{ inventory_total_count }} records)</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span class="kpi-badge badge-cyan">Grain: 1 Row / Store-SKU</span>
+            <a href="{{ url_for('export_inventory_snapshot') }}" class="btn btn-primary btn-sm">⬇️ Export inventory_snapshot.csv</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Inv ID</th>
+                    <th>Store Branch</th>
+                    <th>City</th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th class="text-right">Stock on Hand</th>
+                    <th class="text-right">Reorder</th>
+                    <th style="text-align:center;">Condition</th>
+                    <th class="text-right">Calculated Valuation ($)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in inventory_preview %}
+                <tr>
+                    <td class="font-mono" style="color:var(--text-muted);">#{{ row.inventory_id }}</td>
+                    <td class="font-bold">{{ row.store_name }}</td>
+                    <td>{{ row.city }}</td>
+                    <td>{{ row.product_name }}</td>
+                    <td><span class="kpi-badge badge-indigo">{{ row.category }}</span></td>
+                    <td class="text-right font-mono font-bold">{{ row.stock_on_hand }}</td>
+                    <td class="text-right font-mono" style="color:var(--text-muted);">{{ row.reorder_level }}</td>
+                    <td style="text-align:center;">
+                        <span class="kpi-badge {% if row.stock_status == 'OUT OF STOCK' %}badge-rose{% elif row.stock_status == 'LOW STOCK' %}badge-amber{% else %}badge-emerald{% endif %}" style="font-weight:700;">
+                            {{ row.stock_status }}
+                        </span>
+                    </td>
+                    <td class="text-right font-mono font-bold">${{ "{:,.2f}".format(row.inventory_value) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div style="padding:16px 20px; background:#f8fafc; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:0.82rem; color:var(--text-muted);">Preview displaying first 50 records. Full grid contains {{ inventory_total_count }} store-SKU records.</span>
+        <a href="{{ url_for('export_inventory_snapshot') }}" class="btn btn-outline btn-sm">Download Complete Snapshot (1,750 Rows) &rarr;</a>
+    </div>
+</div>
+
+<!-- =====================================================================
+     TAB 6: RECOMMENDATION SIGNALS REPORT
+     ===================================================================== -->
+{% elif active_tab == 'recommendations' %}
+<div class="panel-card">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">Inventory Decision-Support Recommendations Report</h3>
+            <p class="panel-subtitle">Rule-based operational replenishment and inventory review signals across all 35 catalog SKUs</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span class="kpi-badge badge-rose">Grain: 1 Row / SKU</span>
+            <a href="{{ url_for('export_recommendations') }}" class="btn btn-primary btn-sm">⬇️ Export recommendations.csv</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th class="text-right">Velocity</th>
+                    <th class="text-right">Stock</th>
+                    <th class="text-right">Coverage</th>
+                    <th style="text-align:center;">Priority</th>
+                    <th>Signal &amp; Recommendation</th>
+                    <th>Rule Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in recommendations %}
+                <tr>
+                    <td class="font-bold">{{ row.product_name }}</td>
+                    <td><span class="kpi-badge badge-indigo">{{ row.category }}</span></td>
+                    <td class="text-right font-mono font-bold">{{ row.sales_velocity }} /d</td>
+                    <td class="text-right font-mono">{{ "{:,}".format(row.current_stock) }}</td>
+                    <td class="text-right font-mono">
+                        {% if row.stock_coverage_days is not none %}
+                            <span class="kpi-badge {% if row.stock_coverage_days < 14.0 %}badge-rose{% else %}badge-cyan{% endif %}">{{ row.stock_coverage_days }} d</span>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        <span class="kpi-badge {% if row.priority == 'HIGH' %}badge-rose{% elif row.priority == 'MEDIUM' %}badge-amber{% elif row.priority == 'LOW' %}badge-emerald{% else %}badge-neutral{% endif %}" style="font-weight:700;">
+                            {{ row.priority }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="kpi-badge {% if 'REPLENISH' in row.recommendation %}badge-rose{% elif 'REVIEW' in row.recommendation or 'MONITOR STOCK' in row.recommendation %}badge-amber{% elif 'MAINTAIN' in row.recommendation %}badge-emerald{% else %}badge-indigo{% endif %}" style="font-weight:700;">
+                            {{ row.recommendation }}
+                        </span>
+                    </td>
+                    <td style="font-size:0.78rem; color:var(--text-muted); max-width:280px;">{{ row.reason }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- =====================================================================
+     TAB 7: POWER BI EXPORT CENTER
+     ===================================================================== -->
+{% elif active_tab == 'export-center' %}
+<div class="panel-card" style="margin-bottom:24px;">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">Power BI Normalized Export Center</h3>
+            <p class="panel-subtitle">Clean, tabular UTF-8 CSV datasets formatted specifically for Microsoft Power BI data modeling and DAX measures</p>
+        </div>
+        <a href="{{ url_for('export_all_powerbi_zip') }}" class="btn btn-primary">
+            📦 Download All 6 Datasets (.ZIP)
+        </a>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:20px; padding:20px;">
+        <!-- Card 1: sales_daily.csv -->
+        <div style="border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px; background:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <h4 style="margin:0; font-size:1rem; font-weight:700; color:var(--text-main);">sales_daily.csv</h4>
+                <span class="kpi-badge badge-indigo">638 Rows</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:8px 0 14px 0;">
+                Daily sales transactions, units sold, and calculated revenue across the 638-day historical period.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
+                <strong>Grain:</strong> 1 row per calendar trading date
+            </div>
+            <a href="{{ url_for('export_sales_daily') }}" class="btn btn-outline btn-sm" style="width:100%; text-align:center;">⬇️ Download sales_daily.csv</a>
+        </div>
+
+        <!-- Card 2: sales_category.csv -->
+        <div style="border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px; background:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <h4 style="margin:0; font-size:1rem; font-weight:700; color:var(--text-main);">sales_category.csv</h4>
+                <span class="kpi-badge badge-indigo">5 Rows</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:8px 0 14px 0;">
+                Aggregated sales volume, calculated revenue, and transaction efficiency by catalog category.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
+                <strong>Grain:</strong> 1 row per product category
+            </div>
+            <a href="{{ url_for('export_sales_category') }}" class="btn btn-outline btn-sm" style="width:100%; text-align:center;">⬇️ Download sales_category.csv</a>
+        </div>
+
+        <!-- Card 3: product_movement.csv -->
+        <div style="border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px; background:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <h4 style="margin:0; font-size:1rem; font-weight:700; color:var(--text-main);">product_movement.csv</h4>
+                <span class="kpi-badge badge-emerald">35 Rows</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:8px 0 14px 0;">
+                Empirical sales velocity, Fast/Normal/Slow classification, stock coverage, and current warehouse stock.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
+                <strong>Grain:</strong> 1 row per catalog product
+            </div>
+            <a href="{{ url_for('export_product_movement') }}" class="btn btn-outline btn-sm" style="width:100%; text-align:center;">⬇️ Download product_movement.csv</a>
+        </div>
+
+        <!-- Card 4: inventory_snapshot.csv -->
+        <div style="border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px; background:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <h4 style="margin:0; font-size:1rem; font-weight:700; color:var(--text-main);">inventory_snapshot.csv</h4>
+                <span class="kpi-badge badge-cyan">1,750 Rows</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:8px 0 14px 0;">
+                Current store-SKU physical stock, reorder levels, stock status conditions, and calculated valuations.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
+                <strong>Grain:</strong> 1 row per store-SKU
+            </div>
+            <a href="{{ url_for('export_inventory_snapshot') }}" class="btn btn-outline btn-sm" style="width:100%; text-align:center;">⬇️ Download inventory_snapshot.csv</a>
+        </div>
+
+        <!-- Card 5: store_sales.csv -->
+        <div style="border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px; background:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <h4 style="margin:0; font-size:1rem; font-weight:700; color:var(--text-main);">store_sales.csv</h4>
+                <span class="kpi-badge badge-purple">50 Rows</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:8px 0 14px 0;">
+                Cumulative sales volume, transaction totals, and calculated revenue aggregated by store branch.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
+                <strong>Grain:</strong> 1 row per retail store
+            </div>
+            <a href="{{ url_for('export_store_sales') }}" class="btn btn-outline btn-sm" style="width:100%; text-align:center;">⬇️ Download store_sales.csv</a>
+        </div>
+
+        <!-- Card 6: recommendations.csv -->
+        <div style="border:1px solid var(--border-color); border-radius:var(--radius-md); padding:16px; background:#fff;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <h4 style="margin:0; font-size:1rem; font-weight:700; color:var(--text-main);">recommendations.csv</h4>
+                <span class="kpi-badge badge-rose">35 Rows</span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:8px 0 14px 0;">
+                Explainable rule-based replenishment recommendations, justification reasons, and operational priority tiers.
+            </p>
+            <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">
+                <strong>Grain:</strong> 1 row per catalog product
+            </div>
+            <a href="{{ url_for('export_recommendations') }}" class="btn btn-outline btn-sm" style="width:100%; text-align:center;">⬇️ Download recommendations.csv</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,36 @@
+product_id,product_name,category,movement_status,current_stock,reorder_level,sales_velocity,stock_coverage_days,recommendation,reason,priority
+6,Colorbuds,Electronics,FAST MOVING,1159,500,163.59,7.1,MONITOR STOCK,Product has high sales velocity and limited approximate stock coverage (7.1 days < 14.0d threshold).,MEDIUM
+25,PlayDoh Can,Art & Crafts,FAST MOVING,2129,500,161.64,13.2,MONITOR STOCK,Product has high sales velocity and limited approximate stock coverage (13.2 days < 14.0d threshold).,MEDIUM
+3,Barrel O' Slime,Art & Crafts,FAST MOVING,1282,500,143.67,8.9,MONITOR STOCK,Product has high sales velocity and limited approximate stock coverage (8.9 days < 14.0d threshold).,MEDIUM
+31,Splash Balls,Sports & Outdoors,FAST MOVING,893,500,94.43,9.5,MONITOR STOCK,Product has high sales velocity and limited approximate stock coverage (9.5 days < 14.0d threshold).,MEDIUM
+18,Lego Bricks,Toys,FAST MOVING,1118,500,93.63,11.9,MONITOR STOCK,Product has high sales velocity and limited approximate stock coverage (11.9 days < 14.0d threshold).,MEDIUM
+1,Action Figure,Toys,FAST MOVING,614,500,90.84,6.8,MONITOR STOCK,Product has high sales velocity and limited approximate stock coverage (6.8 days < 14.0d threshold).,MEDIUM
+26,PlayDoh Playset,Art & Crafts,SLOW MOVING,550,500,9.87,55.7,REVIEW INVENTORY LEVEL,Slow-moving product has stock at or above its reorder threshold.,MEDIUM
+2,Animal Figures,Toys,NORMAL,835,500,61.27,13.6,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+9,Dino Egg,Toys,NORMAL,649,500,59.93,10.8,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+14,Glass Marbles,Games,NORMAL,795,500,58.81,13.5,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+21,Mini Ping Pong Set,Sports & Outdoors,NORMAL,974,500,52.67,18.5,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+7,Dart Gun,Sports & Outdoors,NORMAL,776,500,49.51,15.7,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+10,Dinosaur Figures,Toys,NORMAL,2272,500,45.47,50,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+24,Nerf Gun,Sports & Outdoors,NORMAL,1212,500,41.6,29.1,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+17,Kids Makeup Kit,Art & Crafts,NORMAL,606,500,38.3,15.8,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+27,PlayDoh Toolkit,Art & Crafts,NORMAL,1387,500,36.25,38.3,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+13,Gamer Headphones,Electronics,NORMAL,637,500,28.15,22.6,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+34,Toy Robot,Electronics,NORMAL,622,500,18.42,33.8,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+23,Mr. Potatohead,Toys,NORMAL,709,500,13.49,52.6,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+32,Supersoaker Water Gun,Sports & Outdoors,NORMAL,513,500,10.65,48.2,MAINTAIN CURRENT LEVEL,Current stock is at or above the configured threshold and movement is within the normal range.,LOW
+8,Deck Of Cards,Games,FAST MOVING,2738,500,131.71,20.8,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+19,Magic Sand,Art & Crafts,FAST MOVING,1922,500,94.98,20.2,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+30,Rubik's Cube,Games,FAST MOVING,1497,500,71.59,20.9,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+15,Hot Wheels 5-Pack,Toys,NORMAL,376,500,35.52,10.6,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+16,Jenga,Games,NORMAL,181,500,20.46,8.8,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+11,Etch A Sketch,Art & Crafts,NORMAL,402,500,19.07,21.1,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+12,Foam Disk Launcher,Sports & Outdoors,NORMAL,379,500,11.94,31.7,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+33,Teddy Bear,Toys,SLOW MOVING,483,500,10.06,48,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+29,Plush Pony,Toys,SLOW MOVING,497,500,8.6,57.8,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+5,Classic Dominoes,Games,SLOW MOVING,241,500,7.01,34.4,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+28,Playfoam,Art & Crafts,SLOW MOVING,357,500,6.52,54.8,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+4,Chutes & Ladders,Games,SLOW MOVING,255,500,6,42.5,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+22,Monopoly,Games,SLOW MOVING,207,500,5.31,39,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+35,Uno Card Game,Games,SLOW MOVING,241,500,4.25,56.7,MONITOR,No strong stock or movement signal requires immediate action.,NONE
+20,Mini Basketball Hoop,Sports & Outdoors,SLOW MOVING,234,500,4.15,56.4,MONITOR,No strong stock or movement signal requires immediate action.,NONE

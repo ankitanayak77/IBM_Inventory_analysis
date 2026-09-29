@@ -1,0 +1,255 @@
+// ===============================================================================
+// SMART INVENTORY & SALES ANALYSIS SYSTEM - POWER BI DAX MEASURES CATALOG
+// ===============================================================================
+// Phase 13: Standardized DAX Measure Library
+// Compatible with Power BI Desktop & Analysis Services Tabular Models
+// All metrics reconcile with SQLite database baseline (Phases 6-12)
+// ===============================================================================
+
+// -------------------------------------------------------------------------------
+// 1. CORE HISTORICAL SALES MEASURES (Grain: sales_daily / 2017-01-01 to 2018-09-30)
+// -------------------------------------------------------------------------------
+
+Total Units Sold = 
+SUM ( sales_daily[units_sold] )
+/* 
+   Description: Cumulative physical units sold across all 50 stores during the 638-day historical baseline.
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 1,090,565 units
+*/
+
+Total Calculated Revenue = 
+SUM ( sales_daily[calculated_revenue] )
+/* 
+   Description: Calculated gross revenue evaluated at catalog retail selling price (units_sold * selling_price).
+   Data Type: Currency (Format: $#,##0.00)
+   Baseline Verification: $14,444,572.35
+   Note: Calculated metric; does not represent itemized cash-register transactional receipts.
+*/
+
+Transaction Count = 
+SUM ( sales_daily[transaction_count] )
+/* 
+   Description: Total distinct checkout transactions recorded across all retail store branches.
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 829,262 transactions
+*/
+
+Average Units per Transaction = 
+DIVIDE ( [Total Units Sold], [Transaction Count], 0 )
+/* 
+   Description: Average basket size (units per completed sales transaction).
+   Data Type: Decimal Number (Format: 0.00)
+   Baseline Verification: 1.32 units/transaction
+*/
+
+Average Daily Sales = 
+AVERAGEX ( 
+    VALUES ( DimDate[date] ), 
+    [Total Units Sold] 
+)
+/* 
+   Description: Average units sold per calendar trading day in the selected period.
+   Data Type: Decimal Number (Format: #,##0.0)
+   Baseline Verification: 1,709.4 units/day (1,090,565 / 638 days)
+*/
+
+Average Daily Revenue = 
+AVERAGEX ( 
+    VALUES ( DimDate[date] ), 
+    [Total Calculated Revenue] 
+)
+/* 
+   Description: Average calculated revenue per calendar trading day in the selected period.
+   Data Type: Currency (Format: $#,##0.00)
+   Baseline Verification: $22,640.39/day ($14,444,572.35 / 638 days)
+*/
+
+
+// -------------------------------------------------------------------------------
+// 2. CURRENT INVENTORY & VALUATION MEASURES (Grain: inventory_snapshot / Live State)
+// -------------------------------------------------------------------------------
+
+Total Current Stock = 
+SUM ( inventory_snapshot[stock_on_hand] )
+/* 
+   Description: Total physical units currently available across all 50 stores and 35 products.
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 29,742 units
+   Semantic Note: Represents LIVE operational inventory snapshot; NOT historical daily balances.
+*/
+
+Inventory Value = 
+SUM ( inventory_snapshot[inventory_value] )
+/* 
+   Description: Total calculated valuation of on-hand inventory evaluated at catalog selling price (stock_on_hand * selling_price).
+   Data Type: Currency (Format: $#,##0.00)
+   Baseline Verification: $410,240.58
+*/
+
+Total SKU Combinations = 
+COUNTROWS ( inventory_snapshot )
+/* 
+   Description: Total store-product pairings monitored across the retail chain (50 stores * 35 products).
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 1,750 SKU rows
+*/
+
+Normal Stock Count = 
+CALCULATE ( 
+    COUNTROWS ( inventory_snapshot ), 
+    inventory_snapshot[stock_status] = "NORMAL" 
+)
+/* 
+   Description: Number of store-SKU locations where stock_on_hand >= reorder_level.
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 990 store-SKUs (56.6% of network)
+*/
+
+Low Stock Count = 
+CALCULATE ( 
+    COUNTROWS ( inventory_snapshot ), 
+    inventory_snapshot[stock_status] = "LOW STOCK" 
+)
+/* 
+   Description: Number of store-SKU locations where 0 < stock_on_hand < reorder_level.
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 526 store-SKUs (30.1% of network)
+*/
+
+Out of Stock Count = 
+CALCULATE ( 
+    COUNTROWS ( inventory_snapshot ), 
+    inventory_snapshot[stock_status] = "OUT OF STOCK" 
+)
+/* 
+   Description: Number of store-SKU locations with zero physical inventory (stock_on_hand = 0).
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 234 store-SKUs (13.4% of network)
+*/
+
+Percent Low Stock = 
+DIVIDE ( [Low Stock Count], [Total SKU Combinations], 0 )
+/* 
+   Description: Percentage of network store-SKUs operating below reorder threshold.
+   Data Type: Percentage (Format: 0.0%)
+   Baseline Verification: 30.1%
+*/
+
+Percent Out of Stock = 
+DIVIDE ( [Out of Stock Count], [Total SKU Combinations], 0 )
+/* 
+   Description: Percentage of network store-SKUs completely stocked out.
+   Data Type: Percentage (Format: 0.0%)
+   Baseline Verification: 13.4%
+*/
+
+
+// -------------------------------------------------------------------------------
+// 3. PRODUCT MOVEMENT & SALES VELOCITY MEASURES (Grain: product_movement / 35 SKUs)
+// -------------------------------------------------------------------------------
+
+Fast Moving Product Count = 
+CALCULATE ( 
+    COUNTROWS ( product_movement ), 
+    product_movement[movement_status] = "FAST MOVING" 
+)
+/* 
+   Description: Number of catalog items in top velocity percentile (empirical threshold: >=66.43 units/day).
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 9 products
+*/
+
+Normal Moving Product Count = 
+CALCULATE ( 
+    COUNTROWS ( product_movement ), 
+    product_movement[movement_status] = "NORMAL" 
+)
+/* 
+   Description: Number of catalog items in middle velocity percentile.
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 17 products
+*/
+
+Slow Moving Product Count = 
+CALCULATE ( 
+    COUNTROWS ( product_movement ), 
+    product_movement[movement_status] = "SLOW MOVING" 
+)
+/* 
+   Description: Number of catalog items in bottom velocity percentile (empirical threshold: <=10.36 units/day).
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 9 products
+*/
+
+Average Sales Velocity = 
+AVERAGE ( product_movement[sales_velocity] )
+/* 
+   Description: Mean daily sales velocity across all 35 catalog items over the 638-day historical period.
+   Data Type: Decimal Number (Format: 0.00)
+   Baseline Verification: 48.86 units/day
+*/
+
+
+// -------------------------------------------------------------------------------
+// 4. DECISION-SUPPORT RECOMMENDATION MEASURES (Grain: recommendations / 35 SKUs)
+// -------------------------------------------------------------------------------
+
+Products Requiring Attention = 
+CALCULATE ( 
+    COUNTROWS ( recommendations ), 
+    recommendations[priority] IN { "HIGH", "MEDIUM" } 
+)
+/* 
+   Description: Catalog items classified with High or Medium urgency requiring replenishment or inventory review.
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 7 products (0 High, 7 Medium)
+*/
+
+High Priority Recommendations = 
+CALCULATE ( 
+    COUNTROWS ( recommendations ), 
+    recommendations[priority] = "HIGH" 
+)
+/* 
+   Description: Products with severe stock deficits (e.g., Fast Moving + Out of Stock or Stock < Reorder).
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 0 products (at chain aggregate level)
+*/
+
+Medium Priority Recommendations = 
+CALCULATE ( 
+    COUNTROWS ( recommendations ), 
+    recommendations[priority] = "MEDIUM" 
+)
+/* 
+   Description: Products requiring proactive monitoring (e.g., Fast Moving with low days coverage, or Slow Moving with excess stock).
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 7 products (Colorbuds, PlayDoh, Nerf Gun, Rubik's Cube, Uno Card Game, Playfoam, Dart Gun)
+*/
+
+Low Priority Recommendations = 
+CALCULATE ( 
+    COUNTROWS ( recommendations ), 
+    recommendations[priority] = "LOW" 
+)
+/* 
+   Description: Products operating within normal operational parameters.
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 13 products
+*/
+
+No Priority Recommendations = 
+CALCULATE ( 
+    COUNTROWS ( recommendations ), 
+    recommendations[priority] = "NONE" 
+)
+/* 
+   Description: Stable products with healthy coverage and balanced movement.
+   Data Type: Whole Number (Format: #,##0)
+   Baseline Verification: 15 products
+*/
+
+// ===============================================================================
+// END OF DAX MEASURES CATALOG
+// ===============================================================================

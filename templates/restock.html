@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Restocking History{% endblock %}
+{% block breadcrumb %}Restock{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h2 class="page-header-title">Inventory Restocking History</h2>
+        <p class="page-header-subtitle">Inbound store replenishment records, acquisition costs, and audit trails</p>
+    </div>
+    <div>
+        <a href="{{ url_for('add_restock') }}" class="btn btn-primary">
+            <span>+</span> Record Inbound Restock
+        </a>
+    </div>
+</div>
+
+<!-- Restock Filters Toolbar -->
+<div class="toolbar-card">
+    <form method="GET" action="{{ url_for('restock') }}" class="toolbar-form" style="display:flex; flex-direction:column; gap:14px;">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; width:100%;">
+            <!-- Search by Restock ID or Product Name -->
+            <div class="search-input-wrap" style="max-width:none;">
+                <span class="search-icon">🔍</span>
+                <input 
+                    type="text" 
+                    name="search" 
+                    class="search-input" 
+                    placeholder="Search Restock ID or Product..." 
+                    value="{{ search }}"
+                >
+            </div>
+
+            <!-- Product Filter -->
+            <select name="product_id" class="filter-select">
+                <option value="all">All Products ({{ all_products|length }})</option>
+                {% for prod in all_products %}
+                <option value="{{ prod.product_id }}" {% if selected_product == prod.product_id|string %}selected{% endif %}>
+                    {{ prod.product_name }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <!-- Store Filter -->
+            <select name="store_id" class="filter-select">
+                <option value="all">All Stores ({{ all_stores|length }})</option>
+                {% for st in all_stores %}
+                <option value="{{ st.store_id }}" {% if selected_store == st.store_id|string %}selected{% endif %}>
+                    {{ st.store_name }} ({{ st.city }})
+                </option>
+                {% endfor %}
+            </select>
+
+            <!-- Category Filter -->
+            <select name="category" class="filter-select">
+                <option value="all">All Categories</option>
+                {% for cat in all_categories %}
+                <option value="{{ cat.category }}" {% if selected_category == cat.category %}selected{% endif %}>
+                    {{ cat.category }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-top:1px solid #f1f5f9; padding-top:12px;">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <!-- Date Range Filters -->
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label style="font-size:0.78rem; font-weight:600; color:var(--text-muted);">From:</label>
+                    <input type="date" name="date_from" class="filter-select" style="padding:6px 10px; font-size:0.8rem;" value="{{ date_from }}">
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label style="font-size:0.78rem; font-weight:600; color:var(--text-muted);">To:</label>
+                    <input type="date" name="date_to" class="filter-select" style="padding:6px 10px; font-size:0.8rem;" value="{{ date_to }}">
+                </div>
+
+                <!-- Page Size -->
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label style="font-size:0.78rem; font-weight:600; color:var(--text-muted);">Per Page:</label>
+                    <select name="per_page" class="filter-select" style="padding:6px 10px; font-size:0.8rem;">
+                        <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+                {% if search or date_from or date_to or (selected_product and selected_product != 'all') or (selected_store and selected_store != 'all') or (selected_category and selected_category != 'all') %}
+                <a href="{{ url_for('restock') }}" class="btn btn-outline btn-sm">Reset</a>
+                {% endif %}
+            </div>
+
+            <div style="font-size:0.82rem; color:var(--text-muted);">
+                Showing <strong>{{ "{:,}".format(start_index) }} &ndash; {{ "{:,}".format(end_index) }}</strong> of <strong>{{ "{:,}".format(total_count) }}</strong> restock orders
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Restock Orders Table -->
+<div class="panel-card" style="padding:0; overflow:hidden;">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 100px;">Restock ID</th>
+                    <th style="width: 110px;">Date</th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Store Branch</th>
+                    <th>City</th>
+                    <th class="text-right">Qty Added</th>
+                    <th class="text-right">Unit Cost</th>
+                    <th class="text-right">Total Cost</th>
+                    <th style="text-align:right; width: 100px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in restocks %}
+                <tr>
+                    <td class="font-mono" style="color:var(--text-muted);">#{{ r.restock_id }}</td>
+                    <td class="font-mono">{{ r.restock_date }}</td>
+                    <td>
+                        <a href="{{ url_for('product_detail', product_id=r.product_id) }}" style="font-weight:600; color:var(--text-main); text-decoration:none;">
+                            {{ r.product_name }}
+                        </a>
+                    </td>
+                    <td><span class="kpi-badge badge-indigo">{{ r.category }}</span></td>
+                    <td>{{ r.store_name }}</td>
+                    <td style="color:var(--text-muted);">{{ r.city }}</td>
+                    <td class="text-right font-mono font-bold" style="color:#047857;">+{{ r.quantity }}</td>
+                    <td class="text-right font-mono">${{ "{:.2f}".format(r.cost_per_unit) }}</td>
+                    <td class="text-right font-mono font-bold">${{ "{:,.2f}".format(r.total_cost) }}</td>
+                    <td style="text-align:right;">
+                        <a href="{{ url_for('restock_detail', restock_id=r.restock_id) }}" class="btn btn-outline btn-sm" title="View Restock Detail">
+                            Details
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" style="text-align:center; padding: 48px 20px;">
+                        <div style="font-size:2rem; margin-bottom:8px;">📦</div>
+                        <div style="font-weight:600; color:var(--text-main); font-size:1rem;">No Inbound Restock Orders Found</div>
+                        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px;">
+                            No replenishment orders have been recorded yet or matched your filter criteria.
+                        </p>
+                        <a href="{{ url_for('add_restock') }}" class="btn btn-primary btn-sm" style="margin-top:14px;">+ Record First Restock</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Server-Side Pagination Bar -->
+    {% if total_pages > 1 %}
+    <div class="pagination-wrapper">
+        <div class="pagination-info">
+            Page <strong>{{ current_page }}</strong> of <strong>{{ total_pages }}</strong> &bull; Total {{ "{:,}".format(total_count) }} Records
+        </div>
+
+        <nav class="pagination-nav">
+            {% if current_page > 1 %}
+            <a href="{{ url_for('restock', page=1, per_page=per_page, search=search, date_from=date_from, date_to=date_to, product_id=selected_product, store_id=selected_store, category=selected_category) }}" class="page-btn" title="First Page">&laquo;</a>
+            <a href="{{ url_for('restock', page=current_page - 1, per_page=per_page, search=search, date_from=date_from, date_to=date_to, product_id=selected_product, store_id=selected_store, category=selected_category) }}" class="page-btn" title="Previous Page">&lsaquo;</a>
+            {% else %}
+            <span class="page-btn disabled">&laquo;</span>
+            <span class="page-btn disabled">&lsaquo;</span>
+            {% endif %}
+
+            {% set start_page = [1, current_page - 2]|max %}
+            {% set end_page = [total_pages, current_page + 2]|min %}
+
+            {% for p in range(start_page, end_page + 1) %}
+            <a href="{{ url_for('restock', page=p, per_page=per_page, search=search, date_from=date_from, date_to=date_to, product_id=selected_product, store_id=selected_store, category=selected_category) }}" class="page-btn {% if p == current_page %}active{% endif %}">
+                {{ p }}
+            </a>
+            {% endfor %}
+
+            {% if current_page < total_pages %}
+            <a href="{{ url_for('restock', page=current_page + 1, per_page=per_page, search=search, date_from=date_from, date_to=date_to, product_id=selected_product, store_id=selected_store, category=selected_category) }}" class="page-btn" title="Next Page">&rsaquo;</a>
+            <a href="{{ url_for('restock', page=total_pages, per_page=per_page, search=search, date_from=date_from, date_to=date_to, product_id=selected_product, store_id=selected_store, category=selected_category) }}" class="page-btn" title="Last Page">&raquo;</a>
+            {% else %}
+            <span class="page-btn disabled">&rsaquo;</span>
+            <span class="page-btn disabled">&raquo;</span>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

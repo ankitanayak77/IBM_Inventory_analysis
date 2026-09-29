@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Product Catalog{% endblock %}
+{% block breadcrumb %}Products{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h2 class="page-header-title">Product Catalog</h2>
+        <p class="page-header-subtitle">Manage products, pricing, categories, and lifecycle status</p>
+    </div>
+    <div>
+        <a href="{{ url_for('add_product') }}" class="btn btn-primary">
+            <span>+</span> Add New Product
+        </a>
+    </div>
+</div>
+
+<!-- Search & Filter Toolbar -->
+<div class="toolbar-card">
+    <form method="GET" action="{{ url_for('products') }}" class="toolbar-form">
+        <div class="search-filter-group">
+            <!-- Search Box -->
+            <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input 
+                    type="text" 
+                    name="search" 
+                    class="search-input" 
+                    placeholder="Search by Product Name or ID..." 
+                    value="{{ search }}"
+                >
+            </div>
+
+            <!-- Category Filter -->
+            <select name="category" class="filter-select">
+                <option value="all" {% if selected_category == 'all' %}selected{% endif %}>All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Status Filter -->
+            <select name="status" class="filter-select">
+                <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All Statuses</option>
+                <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active Only</option>
+                <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive Only</option>
+            </select>
+
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            {% if search or (selected_category and selected_category != 'all') or (selected_status and selected_status != 'all') %}
+            <a href="{{ url_for('products') }}" class="btn btn-outline btn-sm">Reset</a>
+            {% endif %}
+        </div>
+
+        <div style="font-size:0.8rem; color:var(--text-muted);">
+            Showing <strong>{{ total_count }}</strong> products
+        </div>
+    </form>
+</div>
+
+<!-- Products Table Panel -->
+<div class="panel-card" style="padding:0; overflow:hidden;">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th class="text-right">Cost Price</th>
+                    <th class="text-right">Selling Price</th>
+                    <th class="text-right">Margin ($)</th>
+                    <th class="text-right">Margin (%)</th>
+                    <th style="text-align:center;">Status</th>
+                    <th style="text-align:right; width: 220px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td class="font-mono" style="color:var(--text-muted);">#{{ p.product_id }}</td>
+                    <td>
+                        <a href="{{ url_for('product_detail', product_id=p.product_id) }}" style="font-weight:600; color:var(--brand-primary); text-decoration:none;">
+                            {{ p.product_name }}
+                        </a>
+                    </td>
+                    <td><span class="kpi-badge badge-indigo">{{ p.category }}</span></td>
+                    <td class="text-right font-mono">${{ "{:.2f}".format(p.cost_price) }}</td>
+                    <td class="text-right font-mono font-bold">${{ "{:.2f}".format(p.selling_price) }}</td>
+                    <td class="text-right font-mono" style="color: {% if p.margin >= 0 %}#047857{% else %}#b91c1c{% endif %};">
+                        ${{ "{:.2f}".format(p.margin) }}
+                    </td>
+                    <td class="text-right font-mono">
+                        <span class="kpi-badge {% if p.margin_pct >= 40 %}badge-emerald{% elif p.margin_pct > 0 %}badge-amber{% else %}badge-rose{% endif %}">
+                            {{ "{:.1f}%".format(p.margin_pct) }}
+                        </span>
+                    </td>
+                    <td style="text-align:center;">
+                        {% if p.active == 1 %}
+                        <span class="kpi-badge badge-active">Active</span>
+                        {% else %}
+                        <span class="kpi-badge badge-inactive">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right;">
+                        <div class="btn-group">
+                            <a href="{{ url_for('product_detail', product_id=p.product_id) }}" class="btn btn-outline btn-sm" title="View Details">
+                                Details
+                            </a>
+                            <a href="{{ url_for('edit_product', product_id=p.product_id) }}" class="btn btn-outline btn-sm" title="Edit Product">
+                                Edit
+                            </a>
+                            {% if p.active == 1 %}
+                            <form method="POST" action="{{ url_for('deactivate_product', product_id=p.product_id) }}" style="display:inline;" onsubmit="return confirm('Deactivate {{ p.product_name }}? Historical sales and inventory records will remain preserved.');">
+                                <button type="submit" class="btn btn-danger-outline btn-sm" title="Deactivate Product">
+                                    Deactivate
+                                </button>
+                            </form>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('activate_product', product_id=p.product_id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-success-outline btn-sm" title="Reactivate Product">
+                                    Activate
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align:center; padding: 48px 20px;">
+                        <div style="font-size:2rem; margin-bottom:8px;">🔍</div>
+                        <div style="font-weight:600; color:var(--text-main); font-size:1rem;">No Products Found</div>
+                        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px;">
+                            No catalog items match your search or filter criteria. Try adjusting your query or filters.
+                        </p>
+                        <a href="{{ url_for('products') }}" class="btn btn-outline btn-sm" style="margin-top:14px;">Reset Filters</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

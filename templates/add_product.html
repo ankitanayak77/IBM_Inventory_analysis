@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Product{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('products') }}" style="color:inherit; text-decoration:none;">Products</a>
+<span>/</span>
+<span class="breadcrumb-active">Add Product</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="max-width: 680px; margin: 0 auto 20px auto;">
+    <div>
+        <h2 class="page-header-title">Add New Catalog Product</h2>
+        <p class="page-header-subtitle">Register a new product item into the SQLite database</p>
+    </div>
+    <div>
+        <a href="{{ url_for('products') }}" class="btn btn-outline">&larr; Back to Catalog</a>
+    </div>
+</div>
+
+<div class="form-card">
+    <form method="POST" action="{{ url_for('add_product') }}">
+        <div class="form-group">
+            <label class="form-label" for="product_name">
+                Product Name <span class="required">*</span>
+            </label>
+            <input 
+                type="text" 
+                id="product_name" 
+                name="product_name" 
+                class="form-control" 
+                placeholder="e.g. Remote Control Drone" 
+                value="{{ product_name if product_name else '' }}"
+                required
+                autofocus
+            >
+            <span class="form-help">Enter a distinctive item title.</span>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="category_select">
+                    Category <span class="required">*</span>
+                </label>
+                <select id="category_select" name="category" class="form-control">
+                    <option value="">-- Choose Existing Category --</option>
+                    {% for cat in existing_categories %}
+                    <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+                <span class="form-help">Select an existing category or enter a new one below.</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="new_category">
+                    Or New Category
+                </label>
+                <input 
+                    type="text" 
+                    id="new_category" 
+                    name="new_category" 
+                    class="form-control" 
+                    placeholder="e.g. Puzzles, Robotics" 
+                    value="{{ new_category if new_category else '' }}"
+                >
+                <span class="form-help">Type here to create a new category name.</span>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="cost_price">
+                    Cost Price ($ USD) <span class="required">*</span>
+                </label>
+                <input 
+                    type="number" 
+                    step="0.01" 
+                    min="0" 
+                    id="cost_price" 
+                    name="cost_price" 
+                    class="form-control font-mono" 
+                    placeholder="0.00" 
+                    value="{{ cost_price if cost_price else '' }}"
+                    required
+                >
+                <span class="form-help">Unit acquisition or manufacturing cost.</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="selling_price">
+                    Selling Price ($ USD) <span class="required">*</span>
+                </label>
+                <input 
+                    type="number" 
+                    step="0.01" 
+                    min="0" 
+                    id="selling_price" 
+                    name="selling_price" 
+                    class="form-control font-mono" 
+                    placeholder="0.00" 
+                    value="{{ selling_price if selling_price else '' }}"
+                    required
+                >
+                <span class="form-help">Standard retail catalog selling price.</span>
+            </div>
+        </div>
+
+        <!-- Calculated Live Margin Preview Banner -->
+        <div id="marginPreviewBox" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:0.82rem; color:#64748b; font-weight:500;">Projected Gross Margin:</span>
+            <div style="font-family:var(--font-mono); font-weight:700; font-size:0.95rem;">
+                <span id="previewMarginAmt" style="color:#047857;">$0.00</span>
+                <span id="previewMarginPct" style="color:#64748b; font-size:0.82rem; margin-left:6px;">(0.0%)</span>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('products') }}" class="btn btn-outline">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <span>💾</span> Save Product
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Live margin calculation helper
+    function updateMarginPreview() {
+        const costInput = document.getElementById('cost_price');
+        const priceInput = document.getElementById('selling_price');
+        const marginAmt = document.getElementById('previewMarginAmt');
+        const marginPct = document.getElementById('previewMarginPct');
+
+        const cost = parseFloat(costInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
+        const margin = price - cost;
+        const pct = price > 0 ? ((margin / price) * 100) : 0;
+
+        marginAmt.textContent = '$' + margin.toFixed(2);
+        marginAmt.style.color = margin >= 0 ? '#047857' : '#b91c1c';
+        marginPct.textContent = '(' + pct.toFixed(1) + '%)';
+    }
+
+    document.getElementById('cost_price').addEventListener('input', updateMarginPreview);
+    document.getElementById('selling_price').addEventListener('input', updateMarginPreview);
+</script>
+{% endblock %}

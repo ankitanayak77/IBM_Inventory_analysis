@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Sale #{{ sale.sale_id }} - Transaction Details{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('sales') }}" style="color:inherit; text-decoration:none;">Sales</a>
+<span>/</span>
+<span class="breadcrumb-active">Transaction #{{ sale.sale_id }}</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+            <h2 class="page-header-title">Sale Transaction #{{ sale.sale_id }}</h2>
+            <span class="kpi-badge badge-emerald">Completed</span>
+        </div>
+        <p class="page-header-subtitle">
+            Recorded on <span class="font-mono font-bold">{{ sale.sale_date }}</span> &bull; Store: <strong>{{ sale.store_name }}</strong> ({{ sale.city }})
+        </p>
+    </div>
+    <div style="display:flex; gap:10px;">
+        <a href="{{ url_for('sales') }}" class="btn btn-outline">&larr; Back to Sales History</a>
+        <a href="{{ url_for('add_sale') }}" class="btn btn-primary">+ Record Another Sale</a>
+    </div>
+</div>
+
+<!-- Primary Financial KPIs Grid -->
+<div class="detail-kpi-grid">
+    <div class="detail-kpi-card">
+        <div class="detail-kpi-label">Calculated Total</div>
+        <div class="detail-kpi-val font-mono" style="color:#0f172a;">
+            ${{ "{:,.2f}".format(sale.total_amount) }}
+        </div>
+        <div class="detail-kpi-sub">{{ sale.quantity }} unit(s) &times; ${{ "{:.2f}".format(sale.unit_price) }}</div>
+    </div>
+
+    <div class="detail-kpi-card">
+        <div class="detail-kpi-label">Quantity Sold</div>
+        <div class="detail-kpi-val font-mono font-bold" style="color:var(--brand-primary);">
+            {{ sale.quantity }}
+        </div>
+        <div class="detail-kpi-sub">Units transferred</div>
+    </div>
+
+    <div class="detail-kpi-card">
+        <div class="detail-kpi-label">Catalog Retail Price</div>
+        <div class="detail-kpi-val font-mono">
+            ${{ "{:.2f}".format(sale.unit_price) }}
+        </div>
+        <div class="detail-kpi-sub">Cost: ${{ "{:.2f}".format(sale.cost_price) }}</div>
+    </div>
+
+    <div class="detail-kpi-card">
+        <div class="detail-kpi-label">Estimated Gross Margin</div>
+        {% set unit_margin = sale.unit_price - sale.cost_price %}
+        {% set total_margin = unit_margin * sale.quantity %}
+        <div class="detail-kpi-val font-mono" style="color:#047857;">
+            ${{ "{:.2f}".format(total_margin) }}
+        </div>
+        <div class="detail-kpi-sub">Margin: ${{ "{:.2f}".format(unit_margin) }} / unit</div>
+    </div>
+</div>
+
+<!-- Transaction Specifications & Item Panel -->
+<div class="panel-card">
+    <div class="panel-header">
+        <h3 class="panel-title">Transaction Details &amp; Product Specification</h3>
+    </div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:20px; font-size:0.88rem;">
+        <div>
+            <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase;">Product Sold</span>
+            <a href="{{ url_for('product_detail', product_id=sale.product_id) }}" style="font-weight:700; color:var(--brand-primary); text-decoration:none;">
+                {{ sale.product_name }}
+            </a>
+            <span class="kpi-badge badge-indigo" style="margin-left:6px;">{{ sale.category }}</span>
+        </div>
+
+        <div>
+            <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase;">Store Branch</span>
+            <strong>{{ sale.store_name }}</strong>
+            <div style="font-size:0.78rem; color:var(--text-muted);">{{ sale.city }} &bull; {{ sale.location }}</div>
+        </div>
+
+        <div>
+            <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase;">Sale Date</span>
+            <span class="font-mono font-bold">{{ sale.sale_date }}</span>
+        </div>
+
+        <div>
+            <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase;">System Record Timestamp</span>
+            <span class="font-mono" style="font-size:0.8rem; color:var(--text-muted);">{{ sale.created_at }}</span>
+        </div>
+
+        {% if sale.notes %}
+        <div style="grid-column: 1 / -1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px;">
+            <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase; margin-bottom:2px;">Transaction Notes</span>
+            <div style="font-style:italic; color:#334155;">{{ sale.notes }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+    <!-- Store Inventory Health Post-Sale -->
+    <div class="panel-card">
+        <div class="panel-header">
+            <h3 class="panel-title">Store Inventory Status</h3>
+            <span class="kpi-badge badge-indigo">Store Stock</span>
+        </div>
+        {% if inv %}
+        <div style="display:flex; flex-direction:column; gap:12px; font-size:0.88rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-muted);">Current Stock on Hand:</span>
+                <span class="font-mono font-bold" style="font-size:1.15rem;">{{ inv.stock_on_hand }} units</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-muted);">Reorder Threshold:</span>
+                <span class="font-mono">{{ inv.reorder_level }} units</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-muted);">Health Status:</span>
+                {% if inv.stock_on_hand == 0 %}
+                <span class="kpi-badge badge-rose">Out of Stock</span>
+                {% elif inv.stock_on_hand < inv.reorder_level %}
+                <span class="kpi-badge badge-amber">Low Stock Alert</span>
+                {% else %}
+                <span class="kpi-badge badge-emerald">Healthy Stock</span>
+                {% endif %}
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; color:var(--text-muted); border-top:1px solid var(--border-subtle); padding-top:8px;">
+                <span>Last Updated:</span>
+                <span class="font-mono">{{ inv.last_updated }}</span>
+            </div>
+        </div>
+        {% else %}
+        <p style="color:var(--text-muted); font-size:0.85rem;">Inventory tracking record not found.</p>
+        {% endif %}
+    </div>
+
+    <!-- Associated Stock Movement Audit Trail -->
+    <div class="panel-card">
+        <div class="panel-header">
+            <h3 class="panel-title">Stock Movement Audit Ledger</h3>
+            <span class="kpi-badge badge-cyan">Audit Trail</span>
+        </div>
+        {% if movement %}
+        <div style="display:flex; flex-direction:column; gap:12px; font-size:0.88rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-muted);">Movement ID:</span>
+                <span class="font-mono font-bold">#{{ movement.movement_id }}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-muted);">Movement Type:</span>
+                <span class="kpi-badge badge-rose">{{ movement.movement_type }}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-muted);">Inventory Adjustment:</span>
+                <span class="font-mono font-bold" style="color:#b91c1c; font-size:1.1rem;">
+                    {{ movement.quantity }} units
+                </span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; color:var(--text-muted); border-top:1px solid var(--border-subtle); padding-top:8px;">
+                <span>Logged At:</span>
+                <span class="font-mono">{{ movement.movement_date }}</span>
+            </div>
+        </div>
+        {% else %}
+        <p style="color:var(--text-muted); font-size:0.85rem;">Historical transaction (pre-dates active audit logging).</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

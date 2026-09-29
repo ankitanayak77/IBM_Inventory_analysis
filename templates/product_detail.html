@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.product_name }} - Details{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('products') }}" style="color:inherit; text-decoration:none;">Products</a>
+<span>/</span>
+<span class="breadcrumb-active">#{{ product.product_id }} - {{ product.product_name }}</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header with Actions -->
+<div class="page-header">
+    <div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+            <h2 class="page-header-title">{{ product.product_name }}</h2>
+            {% if product.active == 1 %}
+            <span class="kpi-badge badge-active">Active</span>
+            {% else %}
+            <span class="kpi-badge badge-inactive">Inactive</span>
+            {% endif %}
+        </div>
+        <p class="page-header-subtitle">
+            Catalog SKU: <span class="font-mono font-bold">#{{ product.product_id }}</span> &bull; Category: <span class="kpi-badge badge-indigo">{{ product.category }}</span>
+        </p>
+    </div>
+    <div style="display:flex; gap:10px;">
+        <a href="{{ url_for('products') }}" class="btn btn-outline">&larr; Back to Catalog</a>
+        <a href="{{ url_for('edit_product', product_id=product.product_id) }}" class="btn btn-outline">
+            <span>✏️</span> Edit Product
+        </a>
+        {% if product.active == 1 %}
+        <form method="POST" action="{{ url_for('deactivate_product', product_id=product.product_id) }}" onsubmit="return confirm('Deactivate {{ product.product_name }}? Historical sales and inventory records will remain preserved.');">
+            <button type="submit" class="btn btn-danger-outline">Deactivate</button>
+        </form>
+        {% else %}
+        <form method="POST" action="{{ url_for('activate_product', product_id=product.product_id) }}">
+            <button type="submit" class="btn btn-success-outline">Reactivate</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Primary Financial & Inventory Metrics Grid -->
+<div class="detail-kpi-grid">
+    <div class="detail-kpi-card">
+        <div class="detail-kpi-label">Selling Price</div>
+        <div class="detail-kpi-val font-mono">${{ "{:.2f}".format(product.selling_price) }}</div>
+        <div class="detail-kpi-sub">Cost: ${{ "{:.2f}".format(product.cost_price) }}</div>
+    </div>
+
+    <div class="detail-kpi-card">
+        <div class="detail-kpi-label">Unit Profit Margin</div>
+        <div class="detail-kpi-val font-mono" style="color: {% if stats.margin >= 0 %}#047857{% else %}#b91c1c{% endif %};">
+            ${{ "{:.2f}".format(stats.margin) }}
+        </div>
+        <div class="detail-kpi-sub">Margin: {{ "{:.1f}%".format(stats.margin_pct) }}</div>
+    </div>
+
+    <div class="detail-kpi-card">
+        <div class="detail-kpi-label">Historical Units Sold</div>
+        <div class="detail-kpi-val font-mono">{{ "{:,}".format(stats.total_units_sold) }}</div>
+        <div class="detail-kpi-sub">{{ "{:,}".format(stats.transaction_count) }} transactions</div>
+    </div>
+
+    <div class="detail-kpi-card">
+        <div class="detail-kpi-label">Calculated Revenue</div>
+        <div class="detail-kpi-val font-mono">${{ "{:,.2f}".format(stats.calculated_revenue) }}</div>
+        <div class="detail-kpi-sub">Catalog Price Baseline</div>
+    </div>
+
+    <div class="detail-kpi-card">
+        <div class="detail-kpi-label">Total Stock Across Stores</div>
+        <div class="detail-kpi-val font-mono">{{ "{:,}".format(stats.total_stock) }}</div>
+        <div class="detail-kpi-sub">Carried in {{ stats.stores_carrying }} of 50 stores</div>
+    </div>
+
+    <div class="detail-kpi-card">
+        <div class="detail-kpi-label">Stock Status Alerts</div>
+        <div class="detail-kpi-val font-mono" style="color:#b45309;">
+            {{ stats.low_stock_stores }} Low / {{ stats.out_of_stock_stores }} Out
+        </div>
+        <div class="detail-kpi-sub">Stores needing restock</div>
+    </div>
+</div>
+
+<!-- Inventory Decision Support & Recommendation Panel (Phase 10) -->
+<div class="panel-card" style="margin-bottom: 24px; border-left: 4px solid {% if recommendation.priority == 'HIGH' %}#ef4444{% elif recommendation.priority == 'MEDIUM' %}#f59e0b{% elif recommendation.priority == 'LOW' %}#10b981{% else %}#6366f1{% endif %};">
+    <div class="panel-header" style="margin-bottom: 12px; padding-bottom: 8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.2rem;">💡</span>
+            <div>
+                <h3 class="panel-title" style="font-size:1rem;">Inventory Recommendation</h3>
+                <p class="panel-subtitle">Rule-based decision support signal based on velocity and stock coverage</p>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span class="kpi-badge {{ recommendation.pri_badge }}" style="font-size:0.75rem; font-weight:700;">
+                Priority: {{ recommendation.priority }}
+            </span>
+            <a href="{{ url_for('recommendations') }}" class="btn btn-outline btn-sm">View All Recommendations</a>
+        </div>
+    </div>
+    
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+        <div style="flex:1; min-width:280px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                <span class="kpi-badge {{ recommendation.rec_badge }}" style="font-size:0.95rem; font-weight:700; padding:4px 12px;">
+                    {{ recommendation.recommendation }}
+                </span>
+            </div>
+            <div style="font-size:0.88rem; color:#334155; line-height:1.45; margin-top:6px;">
+                <strong>Reason:</strong> {{ recommendation.reason }}
+            </div>
+        </div>
+
+        <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; border-left:1px solid #e2e8f0; padding-left:16px;">
+            <div>
+                <span style="display:block; font-size:0.72rem; text-transform:uppercase; color:var(--text-muted); font-weight:600;">Approx. Coverage</span>
+                <span class="font-mono font-bold" style="font-size:1.15rem; color:#0f172a;">
+                    {% if recommendation.stock_coverage_days is not none %}
+                        {{ recommendation.stock_coverage_days }} days
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </span>
+            </div>
+            <div>
+                <a href="{{ url_for('add_restock', product_id=product.product_id) }}" class="btn btn-primary btn-sm">
+                    Restock Product
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Information Specifications Panel -->
+<div class="panel-card">
+    <div class="panel-header">
+        <h3 class="panel-title">Product Specifications & Audit Data</h3>
+    </div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:18px; font-size:0.86rem;">
+        <div>
+            <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase;">Product ID</span>
+            <strong class="font-mono">#{{ product.product_id }}</strong>
+        </div>
+        <div>
+            <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase;">Category</span>
+            <strong>{{ product.category }}</strong>
+        </div>
+        <div>
+            <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase;">Catalog Addition Date</span>
+            <span>{{ product.created_at }}</span>
+        </div>
+        <div>
+            <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase;">Last Updated</span>
+            <span>{{ product.updated_at }}</span>
+        </div>
+        <div>
+            <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase;">First Historical Sale</span>
+            <span class="font-mono">{{ stats.first_sale }}</span>
+        </div>
+        <div>
+            <span style="color:var(--text-muted); display:block; font-size:0.75rem; text-transform:uppercase;">Latest Historical Sale</span>
+            <span class="font-mono">{{ stats.last_sale }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Store Stock Distribution Panel (Live from SQLite Inventory) -->
+<div class="panel-card" style="padding:0; overflow:hidden;">
+    <div style="padding: 20px 24px; border-bottom: 1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h3 class="panel-title">Store Inventory Snapshot</h3>
+            <p class="panel-subtitle">Current stock on hand and reorder thresholds across retail branches</p>
+        </div>
+        <span class="header-tag">{{ store_inventories|length }} Stores Displayed</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Store Branch</th>
+                    <th>City</th>
+                    <th>Location Type</th>
+                    <th class="text-right">Stock on Hand</th>
+                    <th class="text-right">Reorder Threshold</th>
+                    <th style="text-align:center;">Health Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in store_inventories %}
+                <tr>
+                    <td class="font-bold">{{ inv.store_name }}</td>
+                    <td style="color:var(--text-muted);">{{ inv.city }}</td>
+                    <td><span class="kpi-badge badge-indigo">{{ inv.location }}</span></td>
+                    <td class="text-right font-mono font-bold">{{ inv.stock_on_hand }}</td>
+                    <td class="text-right font-mono" style="color:var(--text-muted);">{{ inv.reorder_level }}</td>
+                    <td style="text-align:center;">
+                        {% if inv.stock_on_hand == 0 %}
+                        <span class="kpi-badge badge-rose">Out of Stock</span>
+                        {% elif inv.stock_on_hand < inv.reorder_level %}
+                        <span class="kpi-badge badge-amber">Low Stock</span>
+                        {% else %}
+                        <span class="kpi-badge badge-emerald">Normal</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);">
+                        No store inventory records available.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

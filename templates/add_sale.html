@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Record Sale Transaction{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('sales') }}" style="color:inherit; text-decoration:none;">Sales</a>
+<span>/</span>
+<span class="breadcrumb-active">Record Sale</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="max-width: 720px; margin: 0 auto 20px auto;">
+    <div>
+        <h2 class="page-header-title">Record Sale Transaction</h2>
+        <p class="page-header-subtitle">Execute store point-of-sale transaction with automatic inventory stock reduction</p>
+    </div>
+    <div>
+        <a href="{{ url_for('sales') }}" class="btn btn-outline">&larr; Back to Sales</a>
+    </div>
+</div>
+
+<div class="form-card" style="max-width: 720px;">
+    <form method="POST" action="{{ url_for('add_sale') }}" id="saleForm">
+        <!-- Product & Store Selection -->
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="product_select">
+                    Product <span class="required">*</span>
+                </label>
+                <select id="product_select" name="product_id" class="form-control" required autofocus>
+                    <option value="">-- Select Product --</option>
+                    {% for p in active_products %}
+                    <option value="{{ p.product_id }}" data-price="{{ p.selling_price }}" {% if selected_product_id == p.product_id|string %}selected{% endif %}>
+                        {{ p.product_name }} (${{ "{:.2f}".format(p.selling_price) }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="form-help">Only active catalog products are available.</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="store_select">
+                    Store Location <span class="required">*</span>
+                </label>
+                <select id="store_select" name="store_id" class="form-control" required>
+                    <option value="">-- Select Store Branch --</option>
+                    {% for s in active_stores %}
+                    <option value="{{ s.store_id }}" {% if selected_store_id == s.store_id|string %}selected{% endif %}>
+                        {{ s.store_name }} ({{ s.city }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="form-help">The branch where the sale occurred.</span>
+            </div>
+        </div>
+
+        <!-- Dynamic Live Stock Indicator -->
+        <div id="stockIndicator" class="stock-indicator-card" style="display:none;">
+            <div>
+                <div style="font-size:0.75rem; text-transform:uppercase; font-weight:700; color:var(--text-muted); letter-spacing:0.04em;">
+                    Store Inventory Availability
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+                    <span id="stockValueText" class="font-mono font-bold" style="font-size:1.25rem;">--</span>
+                    <span id="stockStatusBadge" class="kpi-badge badge-indigo">Checking...</span>
+                </div>
+                <div id="stockHelpText" style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">
+                    Select product and store to verify stock.
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:0.75rem; text-transform:uppercase; font-weight:700; color:var(--text-muted);">
+                    Unit Catalog Price
+                </div>
+                <div id="unitPriceText" class="font-mono font-bold" style="font-size:1.25rem; color:var(--text-main);">
+                    $0.00
+                </div>
+            </div>
+        </div>
+
+        <!-- Quantity & Sale Date -->
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="quantity">
+                    Quantity to Sell <span class="required">*</span>
+                </label>
+                <input 
+                    type="number" 
+                    id="quantity" 
+                    name="quantity" 
+                    class="form-control font-mono font-bold" 
+                    min="1" 
+                    step="1" 
+                    value="{{ quantity if quantity else '1' }}" 
+                    required
+                >
+                <span class="form-help" id="qtyHelp">Enter whole units sold (must be &ge; 1).</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="sale_date">
+                    Transaction Date <span class="required">*</span>
+                </label>
+                <input 
+                    type="date" 
+                    id="sale_date" 
+                    name="sale_date" 
+                    class="form-control font-mono" 
+                    value="{{ sale_date if sale_date else today_str }}" 
+                    required
+                >
+                <span class="form-help">Date of sale transaction (YYYY-MM-DD).</span>
+            </div>
+        </div>
+
+        <!-- Calculated Live Total Banner -->
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 18px; margin: 10px 0 20px 0; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <span style="font-size:0.82rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">
+                    Total Transaction Amount:
+                </span>
+                <div style="font-size:0.76rem; color:var(--text-muted);">
+                    <span id="calcFormula">0 units &times; $0.00</span>
+                </div>
+            </div>
+            <div class="font-mono font-bold" style="font-size:1.5rem; color:#0f172a;">
+                <span id="totalAmountText">$0.00</span>
+            </div>
+        </div>
+
+        <!-- Optional Notes -->
+        <div class="form-group">
+            <label class="form-label" for="notes">Transaction Notes / Reference</label>
+            <input 
+                type="text" 
+                id="notes" 
+                name="notes" 
+                class="form-control" 
+                placeholder="Optional customer purchase notes, cash register receipt number, etc." 
+                value="{{ notes if notes else '' }}"
+            >
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+            <a href="{{ url_for('sales') }}" class="btn btn-outline">Cancel</a>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                <span>💳</span> Confirm &amp; Record Sale
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Dynamic Inventory & Total Calculation JavaScript -->
+<script>
+    let currentAvailableStock = 0;
+    let currentUnitPrice = 0;
+
+    const prodSelect = document.getElementById('product_select');
+    const storeSelect = document.getElementById('store_select');
+    const qtyInput = document.getElementById('quantity');
+    const stockBox = document.getElementById('stockIndicator');
+    const stockVal = document.getElementById('stockValueText');
+    const stockBadge = document.getElementById('stockStatusBadge');
+    const stockHelp = document.getElementById('stockHelpText');
+    const unitPriceEl = document.getElementById('unitPriceText');
+    const totalAmountEl = document.getElementById('totalAmountText');
+    const calcFormulaEl = document.getElementById('calcFormula');
+    const submitBtn = document.getElementById('submitBtn');
+    const qtyHelp = document.getElementById('qtyHelp');
+
+    async function checkInventoryAvailability() {
+        const prodId = prodSelect.value;
+        const storeId = storeSelect.value;
+
+        if (!prodId || !storeId) {
+            stockBox.style.display = 'none';
+            currentAvailableStock = 0;
+            updateTotal();
+            return;
+        }
+
+        try {
+            stockBox.style.display = 'flex';
+            stockVal.textContent = 'Checking...';
+            stockBadge.className = 'kpi-badge badge-indigo';
+            stockBadge.textContent = 'Verifying';
+
+            const response = await fetch(`/api/inventory/${prodId}/${storeId}`);
+            if (!response.ok) throw new Error('Inventory lookup failed');
+            const data = await response.json();
+
+            currentAvailableStock = data.stock_on_hand;
+            currentUnitPrice = data.selling_price;
+
+            stockVal.textContent = `${currentAvailableStock} units available`;
+            unitPriceEl.textContent = `$${currentUnitPrice.toFixed(2)}`;
+
+            // Style based on stock level
+            stockBox.className = 'stock-indicator-card';
+            if (currentAvailableStock === 0) {
+                stockBox.classList.add('out-of-stock');
+                stockBadge.className = 'kpi-badge badge-rose';
+                stockBadge.textContent = 'Out of Stock';
+                stockHelp.textContent = '⚠️ This store has 0 units of this product. Sale cannot proceed.';
+            } else if (currentAvailableStock < data.reorder_level) {
+                stockBox.classList.add('low-stock');
+                stockBadge.className = 'kpi-badge badge-amber';
+                stockBadge.textContent = `Low Stock (< ${data.reorder_level})`;
+                stockHelp.textContent = 'Caution: Current stock is below the store reorder threshold.';
+            } else {
+                stockBox.classList.add('in-stock');
+                stockBadge.className = 'kpi-badge badge-emerald';
+                stockBadge.textContent = 'Healthy Stock';
+                stockHelp.textContent = `Sufficient inventory on hand (Reorder threshold: ${data.reorder_level}).`;
+            }
+
+            updateTotal();
+        } catch (err) {
+            stockVal.textContent = 'Error fetching stock';
+            stockBadge.className = 'kpi-badge badge-rose';
+            stockBadge.textContent = 'Unavailable';
+        }
+    }
+
+    function updateTotal() {
+        const qty = parseInt(qtyInput.value) || 0;
+        const total = qty * currentUnitPrice;
+
+        totalAmountEl.textContent = `$${total.toFixed(2)}`;
+        calcFormulaEl.textContent = `${qty} unit(s) × $${currentUnitPrice.toFixed(2)}`;
+
+        // Validate quantity vs stock
+        if (qty > currentAvailableStock && currentAvailableStock >= 0) {
+            qtyHelp.innerHTML = `<span style="color:#b91c1c; font-weight:600;">⚠️ Requested quantity (${qty}) exceeds available stock (${currentAvailableStock})!</span>`;
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            submitBtn.style.cursor = 'not-allowed';
+        } else if (qty <= 0) {
+            qtyHelp.innerHTML = `<span style="color:#b91c1c;">Quantity must be 1 or greater.</span>`;
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+        } else {
+            qtyHelp.textContent = `Enter whole units sold. (Available: ${currentAvailableStock})`;
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+        }
+    }
+
+    prodSelect.addEventListener('change', checkInventoryAvailability);
+    storeSelect.addEventListener('change', checkInventoryAvailability);
+    qtyInput.addEventListener('input', updateTotal);
+
+    // Initial check if pre-selected
+    if (prodSelect.value && storeSelect.value) {
+        checkInventoryAvailability();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{
+  "config": "{\"version\": \"5.50\", \"themeCollection\": {\"baseTheme\": {\"name\": \"Executive Dark/Slate\", \"version\": \"2.0\", \"type\": 2}}, \"activeSectionIndex\": 0, \"defaultDrillFilterOtherVisuals\": true}",
+  "layoutOptimization": 0,
+  "sections": [
+    {
+      "id": 0,
+      "name": "Section_ExecutiveOverview",
+      "displayName": "1. Executive Overview",
+      "filters": "[]",
+      "height": 900,
+      "width": 1600,
+      "config": "{\"objects\": {\"background\": [{\"properties\": {\"color\": {\"solid\": {\"color\": \"#0F172A\"}}, \"transparency\": 0}}]}}"
+    },
+    {
+      "id": 1,
+      "name": "Section_SalesAnalysis",
+      "displayName": "2. Sales Analysis",
+      "filters": "[]",
+      "height": 900,
+      "width": 1600,
+      "config": "{\"objects\": {\"background\": [{\"properties\": {\"color\": {\"solid\": {\"color\": \"#0F172A\"}}, \"transparency\": 0}}]}}"
+    },
+    {
+      "id": 2,
+      "name": "Section_InventoryAnalysis",
+      "displayName": "3. Current Inventory Analysis",
+      "filters": "[]",
+      "height": 900,
+      "width": 1600,
+      "config": "{\"objects\": {\"background\": [{\"properties\": {\"color\": {\"solid\": {\"color\": \"#0F172A\"}}, \"transparency\": 0}}]}}"
+    },
+    {
+      "id": 3,
+      "name": "Section_ProductMovement",
+      "displayName": "4. Product Movement",
+      "filters": "[]",
+      "height": 900,
+      "width": 1600,
+      "config": "{\"objects\": {\"background\": [{\"properties\": {\"color\": {\"solid\": {\"color\": \"#0F172A\"}}, \"transparency\": 0}}]}}"
+    },
+    {
+      "id": 4,
+      "name": "Section_Recommendations",
+      "displayName": "5. Recommendations",
+      "filters": "[]",
+      "height": 900,
+      "width": 1600,
+      "config": "{\"objects\": {\"background\": [{\"properties\": {\"color\": {\"solid\": {\"color\": \"#0F172A\"}}, \"transparency\": 0}}]}}"
+    }
+  ]
+}

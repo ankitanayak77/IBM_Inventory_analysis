@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}System Error (500){% endblock %}
+{% block breadcrumb %}500 Error{% endblock %}
+
+{% block content %}
+<div class="placeholder-container" style="margin-top: 40px;">
+    <div class="placeholder-icon" style="background:#fee2e2; color:#ef4444;">500</div>
+    <h3 class="placeholder-title">Internal Server Error</h3>
+    <p class="placeholder-desc">
+        An unexpected error occurred while processing the request. The issue has been logged for review.
+    </p>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">&larr; Return to Dashboard</a>
+</div>
+{% endblock %}

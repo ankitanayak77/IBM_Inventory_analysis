@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Record Inbound Restock{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('restock') }}" style="color:inherit; text-decoration:none;">Restock</a>
+<span>/</span>
+<span class="breadcrumb-active">Add Restock</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="max-width: 720px; margin: 0 auto 20px auto;">
+    <div>
+        <h2 class="page-header-title">Record Inbound Restock</h2>
+        <p class="page-header-subtitle">Replenish store inventory, register purchase costs, and log audit movement</p>
+    </div>
+    <div>
+        <a href="{{ url_for('restock') }}" class="btn btn-outline">&larr; Back to Restock</a>
+    </div>
+</div>
+
+<div class="form-card" style="max-width: 720px;">
+    <form method="POST" action="{{ url_for('add_restock') }}" id="restockForm">
+        <!-- Product & Store Selection -->
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="product_select">
+                    Product to Restock <span class="required">*</span>
+                </label>
+                <select id="product_select" name="product_id" class="form-control" required autofocus>
+                    <option value="">-- Select Product --</option>
+                    {% for p in active_products %}
+                    <option 
+                        value="{{ p.product_id }}" 
+                        data-cost="{{ p.cost_price }}"
+                        data-price="{{ p.selling_price }}"
+                        {% if selected_product_id == p.product_id|string %}selected{% endif %}
+                    >
+                        {{ p.product_name }} (Cost: ${{ "{:.2f}".format(p.cost_price) }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="form-help">Only active catalog items are available.</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="store_select">
+                    Destination Store <span class="required">*</span>
+                </label>
+                <select id="store_select" name="store_id" class="form-control" required>
+                    <option value="">-- Select Store Branch --</option>
+                    {% for s in active_stores %}
+                    <option value="{{ s.store_id }}" {% if selected_store_id == s.store_id|string %}selected{% endif %}>
+                        {{ s.store_name }} ({{ s.city }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="form-help">Store receiving inbound shipment.</span>
+            </div>
+        </div>
+
+        <!-- Dynamic Live Stock & Restock Projection Card -->
+        <div id="stockIndicator" class="stock-indicator-card" style="display:none;">
+            <div>
+                <div style="font-size:0.75rem; text-transform:uppercase; font-weight:700; color:var(--text-muted); letter-spacing:0.04em;">
+                    Current Store Stock &amp; Health
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+                    <span id="currentStockText" class="font-mono font-bold" style="font-size:1.25rem;">--</span>
+                    <span id="stockStatusBadge" class="kpi-badge badge-indigo">Checking...</span>
+                </div>
+                <div id="stockHelpText" style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">
+                    Select product and store branch to view stock.
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:0.75rem; text-transform:uppercase; font-weight:700; color:var(--text-muted);">
+                    Projected New Stock
+                </div>
+                <div id="projectedStockText" class="font-mono font-bold" style="font-size:1.35rem; color:#047857;">
+                    --
+                </div>
+                <div style="font-size:0.75rem; color:var(--text-muted);">After Inbound Delivery</div>
+            </div>
+        </div>
+
+        <!-- Quantity & Cost per Unit -->
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="quantity">
+                    Quantity to Add <span class="required">*</span>
+                </label>
+                <input 
+                    type="number" 
+                    id="quantity" 
+                    name="quantity" 
+                    class="form-control font-mono font-bold" 
+                    min="1" 
+                    step="1" 
+                    value="{{ quantity if quantity else '20' }}" 
+                    required
+                >
+                <span class="form-help">Number of replenishment units delivered.</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="cost_per_unit">
+                    Acquisition Cost per Unit ($ USD) <span class="required">*</span>
+                </label>
+                <input 
+                    type="number" 
+                    step="0.01" 
+                    min="0" 
+                    id="cost_per_unit" 
+                    name="cost_per_unit" 
+                    class="form-control font-mono font-bold" 
+                    placeholder="0.00" 
+                    value="{{ cost_per_unit if cost_per_unit else '' }}" 
+                    required
+                >
+                <span class="form-help">Defaults to product catalog cost; adjust if supplier cost changed.</span>
+            </div>
+        </div>
+
+        <!-- Calculated Live Total Restock Cost Banner -->
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 18px; margin: 10px 0 20px 0; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <span style="font-size:0.82rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">
+                    Total Inbound Inventory Cost:
+                </span>
+                <div style="font-size:0.76rem; color:var(--text-muted);">
+                    <span id="calcFormula">0 units &times; $0.00</span>
+                </div>
+            </div>
+            <div class="font-mono font-bold" style="font-size:1.5rem; color:#0f172a;">
+                <span id="totalCostText">$0.00</span>
+            </div>
+        </div>
+
+        <!-- Restock Date & Notes -->
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="restock_date">
+                    Restock Date <span class="required">*</span>
+                </label>
+                <input 
+                    type="date" 
+                    id="restock_date" 
+                    name="restock_date" 
+                    class="form-control font-mono" 
+                    value="{{ restock_date if restock_date else today_str }}" 
+                    required
+                >
+                <span class="form-help">Date shipment was received and inspected.</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="notes">Shipment Notes / PO Reference</label>
+                <input 
+                    type="text" 
+                    id="notes" 
+                    name="notes" 
+                    class="form-control" 
+                    placeholder="e.g. PO #8492, Supplier Batch 3B" 
+                    value="{{ notes if notes else '' }}"
+                >
+                <span class="form-help">Optional purchase order or supplier reference.</span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+            <a href="{{ url_for('restock') }}" class="btn btn-outline">Cancel</a>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                <span>🔄</span> Confirm &amp; Inbound Restock
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Dynamic Inventory & Cost Calculation JavaScript -->
+<script>
+    let currentStock = 0;
+    let currentReorderLevel = 10;
+
+    const prodSelect = document.getElementById('product_select');
+    const storeSelect = document.getElementById('store_select');
+    const qtyInput = document.getElementById('quantity');
+    const costInput = document.getElementById('cost_per_unit');
+    const stockBox = document.getElementById('stockIndicator');
+    const currentStockEl = document.getElementById('currentStockText');
+    const projectedStockEl = document.getElementById('projectedStockText');
+    const stockBadge = document.getElementById('stockStatusBadge');
+    const stockHelp = document.getElementById('stockHelpText');
+    const totalCostEl = document.getElementById('totalCostText');
+    const calcFormulaEl = document.getElementById('calcFormula');
+
+    async function checkInventoryForRestock() {
+        const prodId = prodSelect.value;
+        const storeId = storeSelect.value;
+
+        if (!prodId || !storeId) {
+            stockBox.style.display = 'none';
+            currentStock = 0;
+            updateRestockProjection();
+            return;
+        }
+
+        try {
+            stockBox.style.display = 'flex';
+            currentStockEl.textContent = 'Checking...';
+            stockBadge.className = 'kpi-badge badge-indigo';
+            stockBadge.textContent = 'Verifying';
+
+            const response = await fetch(`/api/inventory/${prodId}/${storeId}`);
+            if (!response.ok) throw new Error('Inventory lookup failed');
+            const data = await response.json();
+
+            currentStock = data.stock_on_hand;
+            currentReorderLevel = data.reorder_level;
+
+            // Pre-fill cost per unit from catalog cost if not modified by user
+            if (!costInput.value || costInput.value === '0.00' || costInput.dataset.autofilled === 'true') {
+                costInput.value = data.cost_price.toFixed(2);
+                costInput.dataset.autofilled = 'true';
+            }
+
+            currentStockEl.textContent = `${currentStock} units on hand`;
+
+            // Status styling
+            stockBox.className = 'stock-indicator-card';
+            if (currentStock === 0) {
+                stockBox.classList.add('out-of-stock');
+                stockBadge.className = 'kpi-badge badge-rose';
+                stockBadge.textContent = 'Currently Out of Stock';
+                stockHelp.textContent = 'Urgent replenishment recommended. Zero stock at this branch.';
+            } else if (currentStock < currentReorderLevel) {
+                stockBox.classList.add('low-stock');
+                stockBadge.className = 'kpi-badge badge-amber';
+                stockBadge.textContent = `Low Stock (< ${currentReorderLevel})`;
+                stockHelp.textContent = `Current stock is below reorder threshold (${currentReorderLevel}).`;
+            } else {
+                stockBox.classList.add('in-stock');
+                stockBadge.className = 'kpi-badge badge-emerald';
+                stockBadge.textContent = 'Healthy Stock';
+                stockHelp.textContent = `Adequate inventory on hand (Reorder threshold: ${currentReorderLevel}).`;
+            }
+
+            updateRestockProjection();
+        } catch (err) {
+            currentStockEl.textContent = 'Error fetching stock';
+            stockBadge.className = 'kpi-badge badge-rose';
+            stockBadge.textContent = 'Unavailable';
+        }
+    }
+
+    function updateRestockProjection() {
+        const qty = parseInt(qtyInput.value) || 0;
+        const unitCost = parseFloat(costInput.value) || 0;
+        const total = qty * unitCost;
+
+        const projected = currentStock + qty;
+        projectedStockEl.textContent = `${projected} units`;
+
+        totalCostEl.textContent = `$${total.toFixed(2)}`;
+        calcFormulaEl.textContent = `${qty} unit(s) × $${unitCost.toFixed(2)}`;
+    }
+
+    prodSelect.addEventListener('change', checkInventoryForRestock);
+    storeSelect.addEventListener('change', checkInventoryForRestock);
+    qtyInput.addEventListener('input', updateRestockProjection);
+    costInput.addEventListener('input', () => {
+        costInput.dataset.autofilled = 'false';
+        updateRestockProjection();
+    });
+
+    if (prodSelect.value && storeSelect.value) {
+        checkInventoryForRestock();
+    }
+</script>
+{% endblock %}

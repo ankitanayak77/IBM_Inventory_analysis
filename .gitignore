@@ -1,0 +1,60 @@
+# ==============================================================================
+# SMART INVENTORY & SALES ANALYSIS SYSTEM - GITIGNORE
+# ==============================================================================
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Testing & coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Operating system & editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs & temp files
+*.log
+*.tmp
+temp/
+scratch/
+
+# SQLite temporary WAL and lock files (Preserve database/inventory.db baseline)
+database/*.db-wal
+database/*.db-shm
+database/*.bak
+
+# Environment and sensitive files
+.env
+.env.*
+*.env
+*.local
+credentials.json
+client_secrets.json
+*.pem
+*.key
+
+# Node & Next.js residual artifacts (if any)
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+

@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}Store Inventory Tracking &amp; Stock Status{% endblock %}
+{% block breadcrumb %}Inventory{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h2 class="page-header-title">Store Inventory Management</h2>
+        <p class="page-header-subtitle">Real-time stock tracking, threshold monitoring, and dynamic valuation across 50 retail locations</p>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <a href="{{ url_for('add_restock') }}" class="btn btn-primary">
+            <span>+</span> Inbound Restock
+        </a>
+        <a href="{{ url_for('add_sale') }}" class="btn btn-outline">
+            <span>💳</span> Record Sale
+        </a>
+    </div>
+</div>
+
+<!-- Semantic Data Architecture Notice -->
+<div class="semantic-notice info">
+    <div class="notice-icon">ℹ️</div>
+    <div class="notice-body">
+        <h4>Inventory Valuation at Catalog Selling Price</h4>
+        <p>
+            The stock records below represent the application's live inventory across 50 stores. 
+            <strong>Stock Value</strong> is calculated as <code>stock_on_hand &times; catalog selling_price</code> 
+            because the historical source inventory snapshot provides physical unit counts without cost-basis valuation.
+            Stock statuses are dynamically evaluated: 
+            <span class="kpi-badge badge-rose" style="font-size:0.68rem;">OUT OF STOCK</span> (0 units), 
+            <span class="kpi-badge badge-amber" style="font-size:0.68rem;">LOW STOCK</span> (&gt; 0 and &lt; reorder threshold), and 
+            <span class="kpi-badge badge-emerald" style="font-size:0.68rem;">NORMAL</span> (&ge; reorder threshold).
+        </p>
+    </div>
+</div>
+
+<!-- Inventory Summary KPI Cards -->
+<div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+    <!-- Total Inventory Units -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Total Inventory Units</span>
+            <div class="kpi-icon-wrap icon-blue">📦</div>
+        </div>
+        <div class="kpi-value font-mono">{{ "{:,}".format(summary.total_units) }}</div>
+        <div class="kpi-footer">
+            <span>Physical units on hand</span>
+            <span class="kpi-badge badge-indigo">All Stores</span>
+        </div>
+    </div>
+
+    <!-- Calculated Inventory Value -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Calculated Inventory Value</span>
+            <div class="kpi-icon-wrap icon-emerald">💰</div>
+        </div>
+        <div class="kpi-value font-mono" style="color:#047857;">${{ "{:,.2f}".format(summary.total_inventory_value) }}</div>
+        <div class="kpi-footer">
+            <span>At catalog retail price</span>
+            <span class="kpi-badge badge-emerald">Valuation</span>
+        </div>
+    </div>
+
+    <!-- Normal Stock Records -->
+    <div class="kpi-card" style="cursor:pointer;" onclick="location.href='{{ url_for('inventory', stock_status='normal') }}';" title="Click to filter Normal Stock">
+        <div class="kpi-header">
+            <span class="kpi-label">Normal Stock</span>
+            <div class="kpi-icon-wrap icon-emerald">✅</div>
+        </div>
+        <div class="kpi-value font-mono" style="color:#059669;">{{ "{:,}".format(summary.normal_stock) }}</div>
+        <div class="kpi-footer">
+            <span>&ge; Reorder threshold</span>
+            <span class="kpi-badge badge-emerald">Healthy Stock</span>
+        </div>
+    </div>
+
+    <!-- Low Stock Records -->
+    <div class="kpi-card" style="cursor:pointer;" onclick="location.href='{{ url_for('inventory', stock_status='low') }}';" title="Click to filter Low Stock">
+        <div class="kpi-header">
+            <span class="kpi-label">Low Stock</span>
+            <div class="kpi-icon-wrap icon-amber">⚠️</div>
+        </div>
+        <div class="kpi-value font-mono" style="color:#b45309;">{{ "{:,}".format(summary.low_stock) }}</div>
+        <div class="kpi-footer">
+            <span>&lt; Reorder threshold</span>
+            <span class="kpi-badge badge-amber">Needs Restock</span>
+        </div>
+    </div>
+
+    <!-- Out of Stock Records -->
+    <div class="kpi-card" style="cursor:pointer;" onclick="location.href='{{ url_for('inventory', stock_status='out') }}';" title="Click to filter Out of Stock">
+        <div class="kpi-header">
+            <span class="kpi-label">Out of Stock</span>
+            <div class="kpi-icon-wrap icon-rose">🛑</div>
+        </div>
+        <div class="kpi-value font-mono" style="color:#b91c1c;">{{ "{:,}".format(summary.out_of_stock) }}</div>
+        <div class="kpi-footer">
+            <span>0 units remaining</span>
+            <span class="kpi-badge badge-rose">Critical Stock</span>
+        </div>
+    </div>
+
+    <!-- Total Inventory Records -->
+    <div class="kpi-card" style="cursor:pointer;" onclick="location.href='{{ url_for('inventory', stock_status='all') }}';" title="Click to view All Records">
+        <div class="kpi-header">
+            <span class="kpi-label">Total Records</span>
+            <div class="kpi-icon-wrap icon-cyan">🏢</div>
+        </div>
+        <div class="kpi-value font-mono">{{ "{:,}".format(summary.total_records) }}</div>
+        <div class="kpi-footer">
+            <span>Store &times; SKU grid</span>
+            <span class="kpi-badge badge-cyan">50 &times; 35 Grid</span>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Multi-Filter Toolbar -->
+<div class="toolbar-card">
+    <form method="GET" action="{{ url_for('inventory') }}" class="toolbar-form" id="inventoryFilterForm">
+        <div class="search-filter-group" style="width:100%; display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+            <!-- Product Search -->
+            <div class="search-input-wrap" style="min-width:200px; flex:1;">
+                <span class="search-icon">🔍</span>
+                <input 
+                    type="text" 
+                    name="search" 
+                    class="search-input" 
+                    placeholder="Search Product Name or ID..." 
+                    value="{{ search }}"
+                >
+            </div>
+
+            <!-- Store Branch Filter -->
+            <select name="store_id" class="filter-select" style="min-width:170px;">
+                <option value="all" {% if not selected_store or selected_store == 'all' %}selected{% endif %}>All Store Branches</option>
+                {% for s in all_stores %}
+                <option value="{{ s.store_id }}" {% if selected_store == s.store_id|string %}selected{% endif %}>
+                    {{ s.store_name }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <!-- City Filter -->
+            <select name="city" class="filter-select" style="min-width:140px;">
+                <option value="all" {% if not selected_city or selected_city == 'all' %}selected{% endif %}>All Cities</option>
+                {% for c in all_cities %}
+                <option value="{{ c.city }}" {% if selected_city == c.city %}selected{% endif %}>
+                    {{ c.city }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <!-- Category Filter -->
+            <select name="category" class="filter-select" style="min-width:140px;">
+                <option value="all" {% if not selected_category or selected_category == 'all' %}selected{% endif %}>All Categories</option>
+                {% for cat in all_categories %}
+                <option value="{{ cat.category }}" {% if selected_category == cat.category %}selected{% endif %}>
+                    {{ cat.category }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <!-- Stock Status Filter -->
+            <select name="stock_status" class="filter-select" style="min-width:140px;">
+                <option value="all" {% if not selected_status or selected_status == 'all' %}selected{% endif %}>All Statuses</option>
+                <option value="normal" {% if selected_status == 'normal' %}selected{% endif %}>Normal Stock</option>
+                <option value="low" {% if selected_status == 'low' %}selected{% endif %}>Low Stock (&lt; Reorder)</option>
+                <option value="out" {% if selected_status == 'out' %}selected{% endif %}>Out of Stock (0)</option>
+            </select>
+
+            <!-- Page Size -->
+            <div style="display:flex; align-items:center; gap:6px;">
+                <label style="font-size:0.78rem; font-weight:600; color:var(--text-muted); white-space:nowrap;">Per Page:</label>
+                <select name="per_page" class="filter-select" style="padding:6px 10px; font-size:0.8rem;">
+                    <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                    <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+
+            {% if search or (selected_store and selected_store != 'all') or (selected_city and selected_city != 'all') or (selected_category and selected_category != 'all') or (selected_status and selected_status != 'all') or (selected_product and selected_product != 'all') %}
+            <a href="{{ url_for('inventory') }}" class="btn btn-outline btn-sm">Reset</a>
+            {% endif %}
+        </div>
+
+        <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:8px; border-top:1px solid #f1f5f9; font-size:0.82rem; color:var(--text-muted);">
+            <div>
+                Showing <strong>{{ "{:,}".format(start_index) }} &ndash; {{ "{:,}".format(end_index) }}</strong> of <strong>{{ "{:,}".format(total_count) }}</strong> inventory records
+                {% if selected_status and selected_status != 'all' %}
+                <span class="kpi-badge {% if selected_status == 'normal' %}badge-emerald{% elif selected_status == 'low' %}badge-amber{% elif selected_status == 'out' %}badge-rose{% endif %}" style="margin-left:6px;">
+                    Filtered: {{ selected_status|upper }}
+                </span>
+                {% endif %}
+            </div>
+            {% if total_pages > 1 %}
+            <div>
+                Page <strong>{{ current_page }}</strong> of <strong>{{ total_pages }}</strong>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Inventory Records Table Panel -->
+<div class="panel-card" style="padding:0; overflow:hidden;">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 70px;">ID</th>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th>Store Branch</th>
+                    <th>City</th>
+                    <th class="text-right">Current Stock</th>
+                    <th class="text-right">Reorder Level</th>
+                    <th class="text-right" title="Inventory Value at Catalog Selling Price">
+                        Stock Value ($)
+                        <span style="font-size:0.65rem; color:var(--text-muted); display:block; font-weight:normal; text-transform:none;">
+                            At Catalog Price
+                        </span>
+                    </th>
+                    <th style="text-align:center;">Stock Status</th>
+                    <th style="text-align:center;">Recommendation</th>
+                    <th style="width:130px;">Last Updated</th>
+                    <th style="text-align:right; width: 170px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in inventory %}
+                <tr>
+                    <td class="font-mono" style="color:var(--text-muted);">#{{ item.product_id }}</td>
+                    <td>
+                        <a href="{{ url_for('product_detail', product_id=item.product_id) }}" style="font-weight:600; color:var(--brand-primary); text-decoration:none;">
+                            {{ item.product_name }}
+                        </a>
+                    </td>
+                    <td><span class="kpi-badge badge-indigo">{{ item.category }}</span></td>
+                    <td>
+                        <span style="font-weight:500;">{{ item.store_name }}</span>
+                    </td>
+                    <td style="color:var(--text-muted);">{{ item.city }}</td>
+                    
+                    <!-- Stock on hand -->
+                    <td class="text-right font-mono font-bold" style="font-size:0.95rem; color:{% if item.stock_on_hand == 0 %}#b91c1c{% elif item.stock_on_hand < item.reorder_level %}#b45309{% else %}#047857{% endif %};">
+                        {{ item.stock_on_hand }}
+                    </td>
+
+                    <!-- Reorder Level -->
+                    <td class="text-right font-mono" style="color:var(--text-muted);">
+                        {{ item.reorder_level }}
+                    </td>
+
+                    <!-- Stock Value at Catalog Selling Price -->
+                    <td class="text-right font-mono font-bold" style="color:#0f172a;">
+                        ${{ "{:,.2f}".format(item.stock_value) }}
+                    </td>
+
+                    <!-- Dynamic Stock Status Badge -->
+                    <td style="text-align:center;">
+                        {% if item.stock_status == 'OUT OF STOCK' %}
+                        <span class="kpi-badge badge-rose">OUT OF STOCK</span>
+                        {% elif item.stock_status == 'LOW STOCK' %}
+                        <span class="kpi-badge badge-amber">LOW STOCK</span>
+                        {% else %}
+                        <span class="kpi-badge badge-emerald">NORMAL</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Rule-Based Recommendation -->
+                    <td style="text-align:center;">
+                        <span class="kpi-badge {{ item.rec_badge }}" title="Network Recommendation (Priority: {{ item.priority }})">
+                            {{ item.recommendation }}
+                        </span>
+                    </td>
+
+                    <!-- Last Updated -->
+                    <td class="font-mono" style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">
+                        {{ item.last_updated }}
+                    </td>
+
+                    <!-- Quick Actions -->
+                    <td style="text-align:right;">
+                        <div class="btn-group">
+                            <a href="{{ url_for('product_detail', product_id=item.product_id) }}" class="btn btn-outline btn-sm" title="View Product Details">
+                                View
+                            </a>
+                            <a href="{{ url_for('add_restock', product_id=item.product_id, store_id=item.store_id) }}" class="btn btn-primary btn-sm" title="Restock this product at {{ item.store_name }}">
+                                Restock
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="12" style="text-align:center; padding: 48px 20px;">
+                        <div style="font-size:2rem; margin-bottom:8px;">📦</div>
+                        <div style="font-weight:600; color:var(--text-main); font-size:1rem;">No Inventory Records Found</div>
+                        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px;">
+                            No store inventory records match the selected filter criteria.
+                        </p>
+                        <a href="{{ url_for('inventory') }}" class="btn btn-outline btn-sm" style="margin-top:14px;">Reset Filters</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Server-Side Pagination Bar -->
+    {% if total_pages > 1 %}
+    <div class="pagination-wrapper">
+        <div class="pagination-info">
+            Page <strong>{{ current_page }}</strong> of <strong>{{ total_pages }}</strong> &bull; Total {{ "{:,}".format(total_count) }} Records
+        </div>
+
+        <nav class="pagination-nav">
+            <!-- First & Prev Page -->
+            {% if current_page > 1 %}
+            <a href="{{ url_for('inventory', page=1, per_page=per_page, search=search, store_id=selected_store, city=selected_city, category=selected_category, stock_status=selected_status, product_id=selected_product) }}" class="page-btn" title="First Page">&laquo;</a>
+            <a href="{{ url_for('inventory', page=current_page - 1, per_page=per_page, search=search, store_id=selected_store, city=selected_city, category=selected_category, stock_status=selected_status, product_id=selected_product) }}" class="page-btn" title="Previous Page">&lsaquo;</a>
+            {% else %}
+            <span class="page-btn disabled">&laquo;</span>
+            <span class="page-btn disabled">&lsaquo;</span>
+            {% endif %}
+
+            <!-- Dynamic Window of Page Numbers (current +/- 2) -->
+            {% set start_page = [1, current_page - 2]|max %}
+            {% set end_page = [total_pages, current_page + 2]|min %}
+
+            {% for p in range(start_page, end_page + 1) %}
+            <a href="{{ url_for('inventory', page=p, per_page=per_page, search=search, store_id=selected_store, city=selected_city, category=selected_category, stock_status=selected_status, product_id=selected_product) }}" class="page-btn {% if p == current_page %}active{% endif %}">
+                {{ p }}
+            </a>
+            {% endfor %}
+
+            <!-- Next & Last Page -->
+            {% if current_page < total_pages %}
+            <a href="{{ url_for('inventory', page=current_page + 1, per_page=per_page, search=search, store_id=selected_store, city=selected_city, category=selected_category, stock_status=selected_status, product_id=selected_product) }}" class="page-btn" title="Next Page">&rsaquo;</a>
+            <a href="{{ url_for('inventory', page=total_pages, per_page=per_page, search=search, store_id=selected_store, city=selected_city, category=selected_category, stock_status=selected_status, product_id=selected_product) }}" class="page-btn" title="Last Page">&raquo;</a>
+            {% else %}
+            <span class="page-btn disabled">&rsaquo;</span>
+            <span class="page-btn disabled">&raquo;</span>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

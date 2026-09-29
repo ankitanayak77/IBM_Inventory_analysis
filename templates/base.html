@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %} | {{ app_name }}</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Main Style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Mobile Overlay Backdrop -->
+    <div id="mobileOverlay" class="mobile-overlay"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar" id="appSidebar">
+        <div class="sidebar-header">
+            <div class="brand-icon">📦</div>
+            <div class="brand-title">
+                <h1>Smart Inventory</h1>
+                <span>Analytics System</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Core Management</div>
+            <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.path in ['/', '/dashboard'] %}active{% endif %}">
+                <span class="nav-icon">📊</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('products') }}" class="nav-link {% if request.path.startswith('/products') %}active{% endif %}">
+                <span class="nav-icon">🏷️</span>
+                <span>Products</span>
+                <span class="nav-badge">Catalog</span>
+            </a>
+            <a href="{{ url_for('inventory') }}" class="nav-link {% if request.path.startswith('/inventory') %}active{% endif %}">
+                <span class="nav-icon">🏢</span>
+                <span>Inventory</span>
+                <span class="nav-badge">Stock</span>
+            </a>
+            <a href="{{ url_for('sales') }}" class="nav-link {% if request.path.startswith('/sales') %}active{% endif %}">
+                <span class="nav-icon">💳</span>
+                <span>Sales</span>
+            </a>
+            <a href="{{ url_for('restock') }}" class="nav-link {% if request.path.startswith('/restock') %}active{% endif %}">
+                <span class="nav-icon">🔄</span>
+                <span>Restock</span>
+            </a>
+
+            <div class="nav-section-title">Intelligence & BI</div>
+            <a href="{{ url_for('analytics') }}" class="nav-link {% if request.path.startswith('/analytics') %}active{% endif %}">
+                <span class="nav-icon">📈</span>
+                <span>Analytics</span>
+            </a>
+            <a href="{{ url_for('recommendations') }}" class="nav-link {% if request.path.startswith('/recommendations') %}active{% endif %}">
+                <span class="nav-icon">💡</span>
+                <span>Recommendations</span>
+                <span class="nav-badge" style="background:#fef3c7; color:#92400e;">Rules</span>
+            </a>
+            <a href="{{ url_for('reports') }}" class="nav-link {% if request.path.startswith('/reports') %}active{% endif %}">
+                <span class="nav-icon">📑</span>
+                <span>Reports & BI</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="db-status-pill">
+                <span class="status-dot"></span>
+                <span>SQLite Connected</span>
+            </div>
+            <div>Dataset: Mexico Toy Sales</div>
+            <div style="color: #475569; font-size: 0.7rem;">v{{ app_version }} &bull; Descriptive Analytics</div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="app-main">
+        <!-- Top App Bar -->
+        <header class="app-header">
+            <div class="header-left">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Navigation">☰</button>
+                <div class="page-breadcrumb">
+                    <span>Smart Inventory</span>
+                    <span>/</span>
+                    <span class="breadcrumb-active">{% block breadcrumb %}Dashboard{% endblock %}</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="header-tag">
+                    <span style="color:#10b981;">●</span> Initial Snapshot Active
+                </span>
+                <span class="header-tag">
+                    <span>📅</span> 2017 &ndash; 2018 Data
+                </span>
+            </div>
+        </header>
+
+        <!-- Dynamic Body Content -->
+        <main class="content-container">
+            <!-- Flash Notification Alerts -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'message' else 'info' }}">
+                        <span class="alert-icon">
+                            {% if category == 'success' %}✅
+                            {% elif category == 'danger' or category == 'error' %}⚠️
+                            {% elif category == 'warning' %}🔔
+                            {% else %}ℹ️{% endif %}
+                        </span>
+                        <div class="alert-content">{{ message }}</div>
+                        <button type="button" class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Client Script -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

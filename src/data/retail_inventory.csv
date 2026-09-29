@@ -1,0 +1,51 @@
+sku,product_name,category,size,color,quantity_on_hand,reorder_point,cost_per_unit,retail_price,last_restock_date,units_sold_30d,supplier,season
+RET001,Classic White T-Shirt,Tops,S,White,42,15,8.50,24.00,2024-02-01,28,Bella Basics,Spring/Summer
+RET002,Classic White T-Shirt,Tops,M,White,38,20,8.50,24.00,2024-02-01,35,Bella Basics,Spring/Summer
+RET003,Classic White T-Shirt,Tops,L,White,45,20,8.50,24.00,2024-02-01,32,Bella Basics,Spring/Summer
+RET004,Classic White T-Shirt,Tops,XL,White,28,15,8.50,24.00,2024-02-01,18,Bella Basics,Spring/Summer
+RET005,Floral Midi Dress,Dresses,S,Multi,8,5,32.00,89.00,2024-01-15,12,Summer Styles Co,Spring/Summer
+RET006,Floral Midi Dress,Dresses,M,Multi,5,8,32.00,89.00,2024-01-15,15,Summer Styles Co,Spring/Summer
+RET007,Floral Midi Dress,Dresses,L,Multi,12,8,32.00,89.00,2024-01-15,9,Summer Styles Co,Spring/Summer
+RET008,Denim Jacket,Outerwear,S,Blue,15,8,38.00,98.00,2024-01-20,7,Denim Dreams,Year-Round
+RET009,Denim Jacket,Outerwear,M,Blue,18,10,38.00,98.00,2024-01-20,12,Denim Dreams,Year-Round
+RET010,Denim Jacket,Outerwear,L,Blue,22,10,38.00,98.00,2024-01-20,8,Denim Dreams,Year-Round
+RET011,High-Waisted Jeans,Bottoms,26,Dark Wash,12,8,28.00,78.00,2024-02-03,15,Denim Dreams,Year-Round
+RET012,High-Waisted Jeans,Bottoms,28,Dark Wash,18,12,28.00,78.00,2024-02-03,22,Denim Dreams,Year-Round
+RET013,High-Waisted Jeans,Bottoms,30,Dark Wash,24,12,28.00,78.00,2024-02-03,18,Denim Dreams,Year-Round
+RET014,High-Waisted Jeans,Bottoms,32,Dark Wash,15,10,28.00,78.00,2024-02-03,12,Denim Dreams,Year-Round
+RET015,Striped Boatneck Top,Tops,S,Navy/White,22,10,12.50,36.00,2024-01-28,18,Bella Basics,Spring/Summer
+RET016,Striped Boatneck Top,Tops,M,Navy/White,28,12,12.50,36.00,2024-01-28,24,Bella Basics,Spring/Summer
+RET017,Striped Boatneck Top,Tops,L,Navy/White,25,12,12.50,36.00,2024-01-28,19,Bella Basics,Spring/Summer
+RET018,Leather Crossbody Bag,Accessories,One Size,Tan,8,5,42.00,118.00,2024-01-10,14,Luxe Leather Co,Year-Round
+RET019,Leather Crossbody Bag,Accessories,One Size,Black,12,8,42.00,118.00,2024-01-10,18,Luxe Leather Co,Year-Round
+RET020,Linen Wide-Leg Pants,Bottoms,S,Beige,18,8,24.00,68.00,2024-02-05,12,Summer Styles Co,Spring/Summer
+RET021,Linen Wide-Leg Pants,Bottoms,M,Beige,22,10,24.00,68.00,2024-02-05,16,Summer Styles Co,Spring/Summer
+RET022,Linen Wide-Leg Pants,Bottoms,L,Beige,19,10,24.00,68.00,2024-02-05,11,Summer Styles Co,Spring/Summer
+RET023,Cashmere Blend Sweater,Tops,S,Cream,6,8,48.00,128.00,2024-01-12,22,Cozy Knits Inc,Fall/Winter
+RET024,Cashmere Blend Sweater,Tops,M,Cream,4,10,48.00,128.00,2024-01-12,28,Cozy Knits Inc,Fall/Winter
+RET025,Cashmere Blend Sweater,Tops,L,Cream,7,8,48.00,128.00,2024-01-12,18,Cozy Knits Inc,Fall/Winter
+RET026,Silk Cami,Tops,S,Blush,32,12,18.00,52.00,2024-02-08,22,Bella Basics,Spring/Summer
+RET027,Silk Cami,Tops,M,Blush,38,15,18.00,52.00,2024-02-08,28,Bella Basics,Spring/Summer
+RET028,Silk Cami,Tops,L,Blush,28,12,18.00,52.00,2024-02-08,18,Bella Basics,Spring/Summer
+RET029,Statement Earrings,Accessories,One Size,Gold,45,20,8.50,28.00,2024-02-10,32,Jewelry Junction,Year-Round
+RET030,Statement Earrings,Accessories,One Size,Silver,38,20,8.50,28.00,2024-02-10,28,Jewelry Junction,Year-Round
+RET031,Wrap Dress,Dresses,S,Black,14,8,28.00,82.00,2024-01-25,11,Summer Styles Co,Year-Round
+RET032,Wrap Dress,Dresses,M,Black,18,10,28.00,82.00,2024-01-25,15,Summer Styles Co,Year-Round
+RET033,Wrap Dress,Dresses,L,Black,16,10,28.00,82.00,2024-01-25,12,Summer Styles Co,Year-Round
+RET034,Ankle Boots,Footwear,7,Black,8,6,52.00,138.00,2024-01-18,15,Footwear First,Fall/Winter
+RET035,Ankle Boots,Footwear,8,Black,6,8,52.00,138.00,2024-01-18,22,Footwear First,Fall/Winter
+RET036,Ankle Boots,Footwear,9,Black,10,8,52.00,138.00,2024-01-18,18,Footwear First,Fall/Winter
+RET037,Blazer - Tailored,Outerwear,S,Navy,12,6,58.00,148.00,2024-02-02,8,Professional Plus,Year-Round
+RET038,Blazer - Tailored,Outerwear,M,Navy,15,8,58.00,148.00,2024-02-02,12,Professional Plus,Year-Round
+RET039,Blazer - Tailored,Outerwear,L,Navy,11,6,58.00,148.00,2024-02-02,7,Professional Plus,Year-Round
+RET040,Sunglasses - Aviator,Accessories,One Size,Gold/Brown,28,15,12.00,38.00,2024-02-12,18,Accessory World,Spring/Summer
+RET041,Sunglasses - Aviator,Accessories,One Size,Black,32,15,12.00,38.00,2024-02-12,22,Accessory World,Spring/Summer
+RET042,Wide Brim Hat,Accessories,One Size,Natural,22,12,15.00,45.00,2024-02-07,14,Accessory World,Spring/Summer
+RET043,Leather Belt,Accessories,S,Brown,18,10,14.00,42.00,2024-01-30,12,Luxe Leather Co,Year-Round
+RET044,Leather Belt,Accessories,M,Brown,24,12,14.00,42.00,2024-01-30,18,Luxe Leather Co,Year-Round
+RET045,Leather Belt,Accessories,L,Brown,20,10,14.00,42.00,2024-01-30,14,Luxe Leather Co,Year-Round
+RET046,Cotton Cardigan,Tops,S,Gray,25,12,22.00,62.00,2024-02-04,16,Cozy Knits Inc,Year-Round
+RET047,Cotton Cardigan,Tops,M,Gray,32,15,22.00,62.00,2024-02-04,24,Cozy Knits Inc,Year-Round
+RET048,Cotton Cardigan,Tops,L,Gray,28,12,22.00,62.00,2024-02-04,18,Cozy Knits Inc,Year-Round
+RET049,Pleated Skirt,Bottoms,S,Burgundy,16,8,26.00,72.00,2024-01-22,10,Summer Styles Co,Fall/Winter
+RET050,Pleated Skirt,Bottoms,M,Burgundy,12,10,26.00,72.00,2024-01-22,14,Summer Styles Co,Fall/Winter
