@@ -40,8 +40,10 @@
                         autocomplete="email"
                         required
                         autofocus
+                        oninput="validateLoginEmail()"
                     >
                 </div>
+                <div id="emailFeedback" style="font-size:0.75rem; margin-top:3px; display:none;"></div>
             </div>
 
             <div class="form-group">
@@ -64,6 +66,24 @@
                     <button type="button" class="password-toggle" onclick="togglePassword('password', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
                         👁️
                     </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="role">
+                    Role <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                    <span class="input-icon">💼</span>
+                    <select id="role" name="role" class="form-control" required style="cursor:pointer; appearance: auto;">
+                        <option value="System Administrator" {% if role in ['System Administrator', 'Administrator'] %}selected{% endif %}>System Administrator</option>
+                        <option value="Inventory Manager" {% if role == 'Inventory Manager' %}selected{% endif %}>Inventory Manager</option>
+                        <option value="Data Analyst" {% if role == 'Data Analyst' %}selected{% endif %}>Data Analyst</option>
+                        <option value="Store Associate" {% if not role or role == 'Store Associate' %}selected{% endif %}>Store Associate</option>
+                    </select>
+                </div>
+                <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">
+                    Role authentication check: Must match the role assigned to your account.
                 </div>
             </div>
 
@@ -249,5 +269,38 @@ function togglePassword(inputId, btn) {
         btn.textContent = '👁️';
     }
 }
+
+function validateLoginEmail() {
+    const emailInput = document.getElementById('email');
+    const feedback = document.getElementById('emailFeedback');
+    if (!emailInput || !feedback) return true;
+    const email = emailInput.value.trim();
+    if (!email) {
+        feedback.style.display = 'none';
+        return false;
+    }
+    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email) || email.includes(' ') || (email.match(/@/g) || []).length !== 1) {
+        feedback.style.display = 'block';
+        feedback.textContent = '✗ Invalid email format (must be user@domain.com, no spaces)';
+        feedback.style.color = '#ef4444';
+        return false;
+    } else {
+        feedback.style.display = 'none';
+        return true;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('loginForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateLoginEmail()) {
+                e.preventDefault();
+                document.getElementById('email').focus();
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

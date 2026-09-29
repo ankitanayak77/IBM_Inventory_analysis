@@ -50,16 +50,17 @@ def create_app(config_class=Config):
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
-        """User Sign In route."""
+        """User Sign In route with role consistency verification."""
         if "user_id" in session:
             return redirect(url_for("dashboard"))
 
         if request.method == "POST":
             email = request.form.get("email")
             password = request.form.get("password")
+            role = request.form.get("role")
             remember = bool(request.form.get("remember"))
 
-            res = auth_service.authenticate_user(email, password)
+            res = auth_service.authenticate_user(email, password, selected_role=role)
             if res["success"]:
                 user = res["user"]
                 session.clear()
@@ -75,23 +76,24 @@ def create_app(config_class=Config):
                 return redirect(url_for("dashboard"))
             else:
                 flash(res["message"], "danger")
-                return render_template("login.html", email=email), 401
+                return render_template("login.html", email=email, role=role), 401
 
         return render_template("login.html")
 
     @app.route("/signup", methods=["GET", "POST"])
     def signup():
-        """User Sign Up / Registration route."""
+        """User Sign Up / Registration route with role selection."""
         if "user_id" in session:
             return redirect(url_for("dashboard"))
 
         if request.method == "POST":
             name = request.form.get("name")
             email = request.form.get("email")
+            role = request.form.get("role")
             password = request.form.get("password")
             confirm_password = request.form.get("confirm_password")
 
-            res = auth_service.register_user(name, email, password, confirm_password)
+            res = auth_service.register_user(name, email, password, confirm_password, role=role)
             if res["success"]:
                 user = res["user"]
                 session.clear()
@@ -99,11 +101,11 @@ def create_app(config_class=Config):
                 session["user_name"] = user["name"]
                 session["user_email"] = user["email"]
                 session["user_role"] = user["role"]
-                flash(res["message"], "success")
+                flash(f"Welcome, {user['name']}. You are signed in as {user['role']}.", "success")
                 return redirect(url_for("dashboard"))
             else:
                 flash(res["message"], "danger")
-                return render_template("signup.html", name=name, email=email), 400
+                return render_template("signup.html", name=name, email=email, role=role), 400
 
         return render_template("signup.html")
 
@@ -272,12 +274,14 @@ def create_app(config_class=Config):
 
         inv_summary = db.query_db("""
             SELECT
-                COALESCE(SUM(stock_on_hand), 0) AS total_stock,
-                COUNT(CASE WHEN stock_on_hand = 0 THEN 1 END) AS out_of_stock,
-                COUNT(CASE WHEN stock_on_hand > 0 AND stock_on_hand < reorder_level THEN 1 END) AS low_stock,
-                COUNT(CASE WHEN stock_on_hand >= reorder_level THEN 1 END) AS normal_stock,
-                COUNT(*) AS total_inventory_records
-            FROM inventory;
+                COALESCE(SUM(i.stock_on_hand), 0) AS total_stock,
+                COUNT(CASE WHEN i.stock_on_hand = 0 THEN 1 END) AS out_of_stock,
+                COUNT(CASE WHEN i.stock_on_hand > 0 AND stock_on_hand < reorder_level THEN 1 END) AS low_stock,
+                COUNT(CASE WHEN i.stock_on_hand >= reorder_level THEN 1 END) AS normal_stock,
+                COUNT(*) AS total_inventory_records,
+                ROUND(COALESCE(SUM(i.stock_on_hand * p.selling_price), 0.0), 2) AS inventory_value
+            FROM inventory i
+            JOIN products p ON i.product_id = p.product_id;
         """, one=True)
 
         total_stock = inv_summary["total_stock"] if inv_summary else 0
@@ -285,6 +289,7 @@ def create_app(config_class=Config):
         low_stock = inv_summary["low_stock"] if inv_summary else 0
         normal_stock = inv_summary["normal_stock"] if inv_summary else 0
         total_inv_records = inv_summary["total_inventory_records"] if inv_summary else 0
+        inventory_value = inv_summary["inventory_value"] if inv_summary else 0.0
 
         recent_sales = db.query_db("""
             SELECT 
@@ -304,6 +309,20 @@ def create_app(config_class=Config):
             LIMIT 6;
         """)
 
+        bounds = analytics_service.get_analysis_date_bounds()
+        active_days = bounds.get("active_days", 1) or 1
+        avg_daily_sales = round(total_units_sold / active_days, 1)
+        overall_velocity = round(total_units_sold / (active_days * (total_products or 1)), 2)
+
+        # Rule-based recommendation attention summary for dashboard
+        rec_data = recommendation_service.get_product_recommendations()
+        attention_summary = rec_data["summary"]
+        top_attention_items = recommendation_service.get_replenishment_priorities(rec_data["recommendations"], limit=4)
+
+        # Movement distribution for analyst dashboard
+        movement_data = dashboard_service.get_movement_summary()
+        movement_summary = movement_data.get("summary", {})
+
         kpis = {
             "total_products": total_products,
             "total_stores": total_stores,
@@ -315,19 +334,18 @@ def create_app(config_class=Config):
             "low_stock": low_stock,
             "normal_stock": normal_stock,
             "total_inventory_records": total_inv_records,
+            "inventory_value": inventory_value,
             "min_sale_date": min_sale_date,
-            "max_sale_date": max_sale_date
+            "max_sale_date": max_sale_date,
+            "avg_daily_sales": avg_daily_sales,
+            "overall_velocity": overall_velocity,
+            "active_days": active_days
         }
 
-        # Rule-based recommendation attention summary for dashboard
-        rec_data = recommendation_service.get_product_recommendations()
-        attention_summary = rec_data["summary"]
-        top_attention_items = recommendation_service.get_replenishment_priorities(rec_data["recommendations"], limit=4)
-
-        bounds = analytics_service.get_analysis_date_bounds()
         cat_rows = db.query_db("SELECT DISTINCT category FROM products ORDER BY category ASC;")
         categories = [r["category"] for r in cat_rows]
         stores = db.query_db("SELECT store_id, store_name, city FROM stores WHERE active = 1 ORDER BY store_name ASC;")
+        products_list = db.query_db("SELECT product_id, product_name, category FROM products WHERE active = 1 ORDER BY product_name ASC;")
 
         return render_template(
             "dashboard.html",
@@ -335,9 +353,11 @@ def create_app(config_class=Config):
             recent_sales=recent_sales,
             attention_summary=attention_summary,
             top_attention_items=top_attention_items,
+            movement_summary=movement_summary,
             bounds=bounds,
             categories=categories,
-            stores=stores
+            stores=stores,
+            products_list=products_list
         )
 
     # ==========================================================
@@ -346,6 +366,7 @@ def create_app(config_class=Config):
 
     @app.route("/products")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def products():
         """
         Product Catalog list view:
@@ -510,6 +531,7 @@ def create_app(config_class=Config):
 
     @app.route("/products/<int:product_id>")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def product_detail(product_id):
         """View individual product details and statistics."""
         product = db.query_db("SELECT * FROM products WHERE product_id = ?;", (product_id,), one=True)
@@ -1284,6 +1306,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/analytics/product-movement")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_analytics_product_movement():
         """
         API endpoint returning product velocity, movement classification, and inventory metrics.
@@ -1319,6 +1342,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/analytics/category-summary")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_analytics_category_summary():
         """
         API endpoint returning category-level sales volumes, revenue, velocity, and movement counts.
@@ -1342,6 +1366,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/analytics/store-summary")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_analytics_store_summary():
         """
         API endpoint returning store-level sales performance for the selected date window.
@@ -1365,6 +1390,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/recommendations")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_recommendations():
         """
         API endpoint returning rule-based recommendations for all catalog products.
@@ -1405,6 +1431,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/recommendations/summary")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_recommendations_summary():
         """
         API endpoint returning summary counts of rule-based recommendation signals.
@@ -1434,6 +1461,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/dashboard/sales-trend")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_dashboard_sales_trend():
         """
         API Endpoint: Daily sales units trend.
@@ -1455,6 +1483,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/dashboard/revenue-trend")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_dashboard_revenue_trend():
         """
         API Endpoint: Daily calculated revenue trend (units * catalog selling price).
@@ -1476,6 +1505,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/dashboard/category-sales")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_dashboard_category_sales():
         """
         API Endpoint: Sales units and calculated revenue by product category.
@@ -1496,6 +1526,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/dashboard/top-products")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_dashboard_top_products():
         """
         API Endpoint: Top products by units sold in the selected period.
@@ -1518,6 +1549,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/dashboard/inventory-status")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_dashboard_inventory_status():
         """
         API Endpoint: Current inventory counts (NORMAL, LOW STOCK, OUT OF STOCK).
@@ -1531,6 +1563,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/dashboard/inventory-category")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_dashboard_inventory_category():
         """
         API Endpoint: Current inventory units grouped by category.
@@ -1543,6 +1576,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/dashboard/store-sales")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_dashboard_store_sales():
         """
         API Endpoint: Sales performance by store branch.
@@ -1564,6 +1598,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/dashboard/movement-summary")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_dashboard_movement_summary():
         """
         API Endpoint: Product movement distribution (FAST MOVING, NORMAL, SLOW MOVING).
@@ -1580,6 +1615,7 @@ def create_app(config_class=Config):
 
     @app.route("/api/dashboard/recommendation-summary")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def api_dashboard_recommendation_summary():
         """
         API Endpoint: Counts for rule-based recommendation signals.
@@ -2107,6 +2143,7 @@ def create_app(config_class=Config):
     # ==========================================================
 
     @app.route("/reports")
+    @app.route("/powerbi")
     @auth_service.login_required
     @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def reports():
@@ -2167,6 +2204,7 @@ def create_app(config_class=Config):
     @app.route("/reports/export/sales-daily")
     @app.route("/reports/export/sales")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def export_sales_daily():
         """CSV download for daily sales summary (sales_daily.csv)."""
         rows = report_service.get_sales_daily_report()
@@ -2181,6 +2219,7 @@ def create_app(config_class=Config):
     @app.route("/reports/export/sales-category")
     @app.route("/reports/export/category-sales")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def export_sales_category():
         """CSV download for category sales summary (sales_category.csv)."""
         rows = report_service.get_sales_category_report()
@@ -2194,6 +2233,7 @@ def create_app(config_class=Config):
 
     @app.route("/reports/export/product-movement")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def export_product_movement():
         """CSV download for product movement classification (product_movement.csv)."""
         rows = report_service.get_product_movement_report()
@@ -2211,6 +2251,7 @@ def create_app(config_class=Config):
     @app.route("/reports/export/inventory-snapshot")
     @app.route("/reports/export/inventory")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def export_inventory_snapshot():
         """CSV download for store inventory snapshot (inventory_snapshot.csv)."""
         rows = report_service.get_inventory_snapshot_report()
@@ -2227,6 +2268,7 @@ def create_app(config_class=Config):
 
     @app.route("/reports/export/store-sales")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def export_store_sales():
         """CSV download for store sales performance (store_sales.csv)."""
         rows = report_service.get_store_sales_report()
@@ -2240,6 +2282,7 @@ def create_app(config_class=Config):
 
     @app.route("/reports/export/recommendations")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def export_recommendations():
         """CSV download for inventory recommendations (recommendations.csv)."""
         rows = report_service.get_recommendation_report()
@@ -2256,6 +2299,7 @@ def create_app(config_class=Config):
 
     @app.route("/reports/export/all")
     @auth_service.login_required
+    @auth_service.role_required(auth_service.ROLE_ADMIN, auth_service.ROLE_MANAGER, auth_service.ROLE_ANALYST)
     def export_all_powerbi_zip():
         """Creates a ZIP archive containing all 6 normalized CSVs + README.md for 1-click Power BI import."""
         import zipfile

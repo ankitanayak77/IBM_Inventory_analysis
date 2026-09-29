@@ -21,7 +21,7 @@
         <div class="role-policy-notice">
             <span>🛡️</span>
             <div>
-                <strong>Role Governance:</strong> All new public registrations are assigned the <strong>Store Associate</strong> operational role. Higher administrative privileges require authorization.
+                <strong>Role-Based Registration:</strong> Select your role (<strong>Store Associate</strong>, <strong>Data Analyst</strong>, or <strong>Inventory Manager</strong>) for this demo. System Administrator accounts are restricted to pre-provisioned administrative governance.
             </div>
         </div>
 
@@ -68,7 +68,26 @@
                         maxlength="120"
                         autocomplete="email"
                         required
+                        oninput="validateEmailField()"
                     >
+                </div>
+                <div id="emailFeedback" style="font-size:0.75rem; margin-top:3px; display:none;"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="role">
+                    Role <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                    <span class="input-icon">💼</span>
+                    <select id="role" name="role" class="form-control" required style="cursor:pointer; appearance: auto;">
+                        <option value="Store Associate" {% if role == 'Store Associate' %}selected{% endif %}>Store Associate</option>
+                        <option value="Data Analyst" {% if role == 'Data Analyst' %}selected{% endif %}>Data Analyst</option>
+                        <option value="Inventory Manager" {% if not role or role == 'Inventory Manager' %}selected{% endif %}>Inventory Manager</option>
+                    </select>
+                </div>
+                <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">
+                    Select the role to experience role-specific navigation, permissions, and dashboards.
                 </div>
             </div>
 
@@ -433,5 +452,41 @@ function checkPasswordMatch() {
         checkMatch.querySelector('span').textContent = '○';
     }
 }
+
+function validateEmailField() {
+    const emailInput = document.getElementById('email');
+    const feedback = document.getElementById('emailFeedback');
+    if (!emailInput || !feedback) return true;
+    const email = emailInput.value.trim();
+    if (!email) {
+        feedback.style.display = 'none';
+        return false;
+    }
+    // Require user@domain.tld structure with exactly one @ and no spaces
+    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email) || email.includes(' ') || (email.match(/@/g) || []).length !== 1) {
+        feedback.style.display = 'block';
+        feedback.textContent = '✗ Invalid email format (must be user@domain.com, no spaces)';
+        feedback.style.color = '#ef4444';
+        return false;
+    } else {
+        feedback.style.display = 'block';
+        feedback.textContent = '✓ Valid email format';
+        feedback.style.color = '#10b981';
+        return true;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('signupForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateEmailField()) {
+                e.preventDefault();
+                document.getElementById('email').focus();
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

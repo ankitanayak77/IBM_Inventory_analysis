@@ -37,6 +37,7 @@ TEST_SUITES = [
     ("Phase 14 - Business Lifecycle", "scripts/test_business_workflow.py"),
     ("Security - Enterprise Auth & RBAC", "scripts/test_auth.py"),
     ("Account  - User Profile & Management", "scripts/test_profile.py"),
+    ("Roles    - Headless Browser RBAC", "scripts/test_role_browser_headless.py"),
 ]
 
 def run_all():

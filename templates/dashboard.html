@@ -1,18 +1,206 @@
 {% extends "base.html" %}
 
-{% block title %}Executive Dashboard & Visual Analytics{% endblock %}
+{% block title %}
+{% if current_user and current_user.role == 'Store Associate' %}
+Store Operations Terminal &ndash; Dashboard
+{% elif current_user and current_user.role == 'Data Analyst' %}
+Data Analyst Workspace &ndash; Dashboard
+{% else %}
+Executive Operations &ndash; Dashboard
+{% endif %}
+{% endblock %}
+
 {% block breadcrumb %}Dashboard{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
+
+{% if current_user and current_user.role == 'Store Associate' %}
+<!-- =====================================================================
+     STORE ASSOCIATE OPERATIONAL DASHBOARD
+     ===================================================================== -->
 <div class="page-header">
     <div>
-        <h2 class="page-header-title">Executive Dashboard &amp; Visual Analytics</h2>
-        <p class="page-header-subtitle">Interactive sales velocity trends, categorical breakdown, and inventory decision support</p>
+        <h2 class="page-header-title">Store Associate Operations &amp; POS Terminal</h2>
+        <p class="page-header-subtitle">Point-of-sale sales entry, real-time store stock availability lookup, and recent branch transactions</p>
     </div>
-    <div style="display:flex; gap:10px;">
+    <div style="display:flex; gap:10px; align-items:center;">
+        <a href="{{ url_for('add_sale') }}" class="btn btn-primary btn-lg" id="btnRecordSale">
+            <span>➕</span> Record New Sale (POS)
+        </a>
+    </div>
+</div>
+
+<!-- Associate Quick Navigation Action Bar -->
+<div class="panel-card" style="margin-bottom: 24px; padding: 16px 20px;">
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.2rem;">⚡</span>
+            <strong style="color: var(--text-main); font-size: 0.95rem;">Operations Quick Actions:</strong>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <a href="{{ url_for('add_sale') }}" class="btn btn-primary btn-sm">Record Sale</a>
+            <a href="{{ url_for('inventory') }}" class="btn btn-outline btn-sm">Inventory Lookup</a>
+            <a href="{{ url_for('sales') }}" class="btn btn-outline btn-sm">Recent Sales Activity</a>
+            <a href="{{ url_for('profile') }}" class="btn btn-outline btn-sm">My Profile</a>
+        </div>
+    </div>
+</div>
+
+<!-- Operational Stock KPI Cards -->
+<div class="kpi-grid">
+    <!-- 1. Total Stock on Hand -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Current Stock on Hand</span>
+            <div class="kpi-icon-wrap icon-cyan">📦</div>
+        </div>
+        <div class="kpi-value">{{ "{:,}".format(kpis.total_stock) }}</div>
+        <div class="kpi-footer">
+            <span>Available Inventory Units</span>
+            <span class="kpi-badge badge-cyan">{{ kpis.total_inventory_records }} Store-SKUs</span>
+        </div>
+    </div>
+
+    <!-- 2. Healthy Stock -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Healthy Stock</span>
+            <div class="kpi-icon-wrap icon-emerald">✅</div>
+        </div>
+        <div class="kpi-value" style="color: #047857;">{{ "{:,}".format(kpis.normal_stock) }}</div>
+        <div class="kpi-footer">
+            <span>Adequate Operating Stock</span>
+            <span class="kpi-badge badge-emerald">Available</span>
+        </div>
+    </div>
+
+    <!-- 3. Low Stock Alerts -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Low Stock Alerts</span>
+            <div class="kpi-icon-wrap icon-amber">⚠️</div>
+        </div>
+        <div class="kpi-value" style="color: #b45309;">{{ "{:,}".format(kpis.low_stock) }}</div>
+        <div class="kpi-footer">
+            <span>Below Reorder Level (&lt; 10)</span>
+            <span class="kpi-badge badge-amber">Restock Soon</span>
+        </div>
+    </div>
+
+    <!-- 4. Out of Stock -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Out of Stock</span>
+            <div class="kpi-icon-wrap icon-rose">🚫</div>
+        </div>
+        <div class="kpi-value" style="color: #b91c1c;">{{ "{:,}".format(kpis.out_of_stock) }}</div>
+        <div class="kpi-footer">
+            <span>0 Units Remaining</span>
+            <span class="kpi-badge badge-rose">Out of Stock</span>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive In-Store Stock Lookup Card -->
+<div class="panel-card" style="margin-bottom: 24px;">
+    <div class="panel-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.3rem;">🔍</span>
+            <div>
+                <h3 class="panel-title">Instant Inventory Stock Lookup</h3>
+                <p class="panel-subtitle">Check real-time stock availability and retail price before completing customer orders</p>
+            </div>
+        </div>
+    </div>
+    <div style="padding: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: flex-end;">
+            <div>
+                <label for="assoc-store" class="form-label" style="font-weight:600; font-size:0.85rem; margin-bottom:6px;">Select Store Branch</label>
+                <select id="assoc-store" class="form-control">
+                    {% for st in stores %}
+                    <option value="{{ st.store_id }}">{{ st.store_name }} ({{ st.city }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="assoc-product" class="form-label" style="font-weight:600; font-size:0.85rem; margin-bottom:6px;">Select Catalog Product</label>
+                <select id="assoc-product" class="form-control">
+                    {% for p in products_list %}
+                    <option value="{{ p.product_id }}">{{ p.product_name }} ({{ p.category }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <button type="button" class="btn btn-primary" onclick="lookupAssociateStock()" style="height:38px; width:100%;">
+                    <span>🔎</span> Check Stock Availability
+                </button>
+            </div>
+        </div>
+        <div id="assoc-result" style="margin-top: 16px; display: none;"></div>
+    </div>
+</div>
+
+<!-- Recent Transactions Table -->
+<div class="panel-card">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">Recent Sales Transactions</h3>
+            <p class="panel-subtitle">Latest transactional activity recorded in the system</p>
+        </div>
+        <a href="{{ url_for('sales') }}" class="btn btn-outline" style="font-size:0.78rem; padding:5px 12px;">View All Sales</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Sale ID</th>
+                    <th>Date</th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Store Branch</th>
+                    <th>City</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Price</th>
+                    <th class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in recent_sales %}
+                <tr>
+                    <td class="font-mono" style="color:#64748b;">#{{ sale.sale_id }}</td>
+                    <td class="font-mono">{{ sale.sale_date }}</td>
+                    <td class="font-bold">{{ sale.product_name }}</td>
+                    <td><span class="kpi-badge badge-indigo">{{ sale.category }}</span></td>
+                    <td>{{ sale.store_name }}</td>
+                    <td style="color:#64748b;">{{ sale.city }}</td>
+                    <td class="text-right font-bold">{{ sale.quantity }}</td>
+                    <td class="text-right font-mono">${{ "{:.2f}".format(sale.unit_price) }}</td>
+                    <td class="text-right font-mono font-bold" style="color:#0f172a;">${{ "{:.2f}".format(sale.total_amount) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align:center; padding:30px; color:#64748b;">No transaction records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% elif current_user and current_user.role == 'Data Analyst' %}
+<!-- =====================================================================
+     DATA ANALYST ANALYTICAL DASHBOARD
+     ===================================================================== -->
+<div class="page-header">
+    <div>
+        <h2 class="page-header-title">Data Analyst Workspace &amp; Visual Analytics</h2>
+        <p class="page-header-subtitle">Sales velocity trends, categorical revenue contribution, product movement classification, and recommendation priorities</p>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
         <a href="{{ url_for('analytics') }}" class="btn btn-outline">Velocity Analytics</a>
         <a href="{{ url_for('recommendations') }}" class="btn btn-primary">Recommendation Engine</a>
+        <a href="{{ url_for('reports') }}" class="btn btn-outline">Reports &amp; BI Exports</a>
     </div>
 </div>
 
@@ -67,61 +255,9 @@
     </div>
 </div>
 
-<!-- Semantic Data Semantics Notice -->
-<div class="semantic-notice info" style="margin-bottom: 24px;">
-    <div class="notice-icon">💡</div>
-    <div class="notice-body">
-        <h4>Data Semantics &amp; Analytical Principles</h4>
-        <p>
-            <strong>Historical Sales Baseline:</strong> Sales transactions span <strong>{{ bounds.min_date }}</strong> to <strong>{{ bounds.max_date }}</strong> ({{ bounds.active_days }} active trading days).<br>
-            <strong>Calculated Revenue:</strong> Source transactions record units sold. Revenue metrics represent <em>Calculated Revenue</em> computed at catalog retail selling price (<code>SUM(quantity &times; selling_price)</code>).<br>
-            <strong>Current Application Inventory:</strong> Stock metrics reflect the live SQLite inventory table state across 50 retail store locations. Inventory status is descriptive and not projected backwards historically.
-        </p>
-    </div>
-</div>
-
-<!-- Top KPI Cards Grid (Queried Live from SQLite) -->
+<!-- Analytical KPI Cards Grid -->
 <div class="kpi-grid">
-    <!-- 1. Total Products -->
-    <div class="kpi-card">
-        <div class="kpi-header">
-            <span class="kpi-label">Catalog Products</span>
-            <div class="kpi-icon-wrap icon-blue">🏷️</div>
-        </div>
-        <div class="kpi-value">{{ "{:,}".format(kpis.total_products) }}</div>
-        <div class="kpi-footer">
-            <span>{{ categories|length }} Active Categories</span>
-            <span class="kpi-badge badge-indigo">Catalog Active</span>
-        </div>
-    </div>
-
-    <!-- 2. Active Stores -->
-    <div class="kpi-card">
-        <div class="kpi-header">
-            <span class="kpi-label">Retail Stores</span>
-            <div class="kpi-icon-wrap icon-cyan">🏬</div>
-        </div>
-        <div class="kpi-value">{{ "{:,}".format(kpis.total_stores) }}</div>
-        <div class="kpi-footer">
-            <span>29 Cities across Mexico</span>
-            <span class="kpi-badge badge-cyan">Operational</span>
-        </div>
-    </div>
-
-    <!-- 3. Calculated Revenue -->
-    <div class="kpi-card">
-        <div class="kpi-header">
-            <span class="kpi-label">Calculated Revenue</span>
-            <div class="kpi-icon-wrap icon-emerald">💰</div>
-        </div>
-        <div class="kpi-value">${{ "{:,.2f}".format(kpis.calculated_revenue) }}</div>
-        <div class="kpi-footer">
-            <span>Catalog Baseline Selling Price</span>
-            <span class="kpi-badge badge-emerald">Calculated</span>
-        </div>
-    </div>
-
-    <!-- 4. Total Units Sold -->
+    <!-- 1. Total Units Sold -->
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Total Units Sold</span>
@@ -130,24 +266,501 @@
         <div class="kpi-value">{{ "{:,}".format(kpis.total_units_sold) }}</div>
         <div class="kpi-footer">
             <span>{{ "{:,}".format(kpis.total_transactions) }} Transactions</span>
-            <span class="kpi-badge badge-indigo">{{ kpis.min_sale_date }} &rarr; {{ kpis.max_sale_date }}</span>
+            <span class="kpi-badge badge-indigo">Full Scope</span>
         </div>
     </div>
 
-    <!-- 5. Total Stock on Hand -->
+    <!-- 2. Calculated Revenue -->
     <div class="kpi-card">
         <div class="kpi-header">
-            <span class="kpi-label">Current Stock on Hand</span>
-            <div class="kpi-icon-wrap icon-cyan">📊</div>
+            <span class="kpi-label">Calculated Revenue</span>
+            <div class="kpi-icon-wrap icon-emerald">💰</div>
+        </div>
+        <div class="kpi-value">${{ "{:,.2f}".format(kpis.calculated_revenue) }}</div>
+        <div class="kpi-footer">
+            <span>Catalog Selling Price</span>
+            <span class="kpi-badge badge-emerald">Calculated</span>
+        </div>
+    </div>
+
+    <!-- 3. Average Daily Sales -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Average Daily Sales</span>
+            <div class="kpi-icon-wrap icon-cyan">📅</div>
+        </div>
+        <div class="kpi-value">{{ "{:,.1f}".format(kpis.avg_daily_sales) }}</div>
+        <div class="kpi-footer">
+            <span>Units / Day</span>
+            <span class="kpi-badge badge-cyan">{{ kpis.active_days }} Trading Days</span>
+        </div>
+    </div>
+
+    <!-- 4. Overall Sales Velocity -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Catalog Sales Velocity</span>
+            <div class="kpi-icon-wrap icon-purple">⚡</div>
+        </div>
+        <div class="kpi-value">{{ "{:.2f}".format(kpis.overall_velocity) }}</div>
+        <div class="kpi-footer">
+            <span>Units / SKU / Day</span>
+            <span class="kpi-badge badge-indigo">Catalog Rate</span>
+        </div>
+    </div>
+
+    <!-- 5. Fast/Normal/Slow Distribution -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Movement Distribution</span>
+            <div class="kpi-icon-wrap icon-amber">📊</div>
+        </div>
+        <div class="kpi-value" style="font-size:1.25rem; font-weight:700;">
+            <span style="color:#10b981;">{{ movement_summary.fast_moving_count|default(9) }}F</span> &bull; 
+            <span style="color:#6366f1;">{{ movement_summary.normal_moving_count|default(17) }}N</span> &bull; 
+            <span style="color:#f59e0b;">{{ movement_summary.slow_moving_count|default(9) }}S</span>
+        </div>
+        <div class="kpi-footer">
+            <span>Phase 9 Percentile Cut</span>
+            <span class="kpi-badge badge-amber">35 Catalog SKUs</span>
+        </div>
+    </div>
+
+    <!-- 6. Inventory Overview -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Current Inventory Snapshot</span>
+            <div class="kpi-icon-wrap icon-cyan">🏢</div>
         </div>
         <div class="kpi-value">{{ "{:,}".format(kpis.total_stock) }}</div>
         <div class="kpi-footer">
-            <span>Current Inventory Units</span>
+            <span>{{ kpis.normal_stock }} Normal &bull; {{ kpis.low_stock }} Low</span>
+            <span class="kpi-badge badge-cyan">Physical Units</span>
+        </div>
+    </div>
+
+    <!-- 7. Products Requiring Attention -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Attention Signals</span>
+            <div class="kpi-icon-wrap icon-rose">⚠️</div>
+        </div>
+        <div class="kpi-value" style="color:#b91c1c;">{{ attention_summary.high_priority_count + attention_summary.medium_priority_count }}</div>
+        <div class="kpi-footer">
+            <span>{{ attention_summary.high_priority_count }} High &bull; {{ attention_summary.medium_priority_count }} Medium Priority</span>
+            <span class="kpi-badge badge-rose">Flagged</span>
+        </div>
+    </div>
+</div>
+
+<!-- Visual Analytics Charts Grid -->
+<div class="chart-section-header">
+    <div>
+        <h3 class="chart-section-title"><span>📈</span> Sales &amp; Revenue Trends</h3>
+        <p class="chart-section-subtitle">Daily transaction volume and calculated revenue trajectory over selected period</p>
+    </div>
+</div>
+
+<div class="chart-grid-2">
+    <!-- Chart 1: Sales Units Trend -->
+    <div class="chart-card" id="sales-trend-wrap">
+        <div class="chart-card-header">
+            <div>
+                <h4 class="chart-card-title">Daily Sales Trend (Units Sold)</h4>
+                <p class="chart-card-desc" id="sales-trend-period">Aggregated daily units across selected filters</p>
+            </div>
+            <span class="kpi-badge badge-indigo">Daily Units</span>
+        </div>
+        <div class="chart-canvas-wrap">
+            <canvas id="chart-sales-trend"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 2: Revenue Trend -->
+    <div class="chart-card" id="revenue-trend-wrap">
+        <div class="chart-card-header">
+            <div>
+                <h4 class="chart-card-title">Calculated Revenue Trend ($)</h4>
+                <p class="chart-card-desc" id="revenue-trend-period">Calculated at catalog selling price</p>
+            </div>
+            <span class="kpi-badge badge-emerald">Calculated Revenue</span>
+        </div>
+        <div class="chart-canvas-wrap">
+            <canvas id="chart-revenue-trend"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="chart-section-header">
+    <div>
+        <h3 class="chart-section-title"><span>📊</span> Category &amp; Top Product Performance</h3>
+        <p class="chart-section-subtitle">Contribution across merchandise categories and top-selling SKUs</p>
+    </div>
+</div>
+
+<div class="chart-grid-2">
+    <!-- Chart 3: Sales by Category -->
+    <div class="chart-card" id="category-sales-wrap">
+        <div class="chart-card-header">
+            <div>
+                <h4 class="chart-card-title">Sales Distribution by Category</h4>
+                <p class="chart-card-desc">Units sold share per product category</p>
+            </div>
+            <span class="kpi-badge badge-indigo">Category Breakdown</span>
+        </div>
+        <div class="chart-canvas-wrap">
+            <canvas id="chart-category-sales"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 4: Top 10 Products -->
+    <div class="chart-card" id="top-products-wrap">
+        <div class="chart-card-header">
+            <div>
+                <h4 class="chart-card-title">Top 10 Products by Units Sold</h4>
+                <p class="chart-card-desc">Highest volume catalog products in selected range</p>
+            </div>
+            <span class="kpi-badge badge-cyan">Top 10 SKUs</span>
+        </div>
+        <div class="chart-canvas-wrap">
+            <canvas id="chart-top-products"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="chart-section-header">
+    <div>
+        <h3 class="chart-section-title"><span>🏬</span> Movement &amp; Store Performance</h3>
+        <p class="chart-section-subtitle">Movement distribution, recommendation signals, and branch sales</p>
+    </div>
+</div>
+
+<div class="chart-grid-3">
+    <!-- Chart 7: Sales by Store Branch -->
+    <div class="chart-card" id="store-sales-wrap">
+        <div class="chart-card-header">
+            <div>
+                <h4 class="chart-card-title">Store Sales Performance</h4>
+                <p class="chart-card-desc">Units sold by branch</p>
+            </div>
+            <select id="store-limit-select" class="form-control" style="height:28px; padding:2px 8px; font-size:0.75rem;">
+                <option value="5">Top 5</option>
+                <option value="10" selected>Top 10</option>
+                <option value="all">All Stores</option>
+            </select>
+        </div>
+        <div class="chart-canvas-wrap-sm">
+            <canvas id="chart-store-sales"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 8: Product Movement Distribution -->
+    <div class="chart-card" id="movement-summary-wrap">
+        <div class="chart-card-header">
+            <div>
+                <h4 class="chart-card-title">Product Movement Distribution</h4>
+                <p class="chart-card-desc">Fast / Normal / Slow</p>
+            </div>
+            <span class="kpi-badge badge-indigo">Phase 9 Analytics</span>
+        </div>
+        <div class="chart-canvas-wrap-sm">
+            <canvas id="chart-movement-summary"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 9: Recommendation Summary -->
+    <div class="chart-card" id="recommendation-summary-wrap">
+        <div class="chart-card-header">
+            <div>
+                <h4 class="chart-card-title">Recommendation Signals</h4>
+                <p class="chart-card-desc">Replenishment &amp; review priorities</p>
+            </div>
+            <span class="kpi-badge badge-rose">Phase 10 Engine</span>
+        </div>
+        <div class="chart-canvas-wrap-sm">
+            <canvas id="chart-recommendation-summary"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Attention Table (Read-Only Review for Analyst) -->
+<div class="panel-card" style="margin-bottom: 24px;">
+    <div class="panel-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.3rem;">💡</span>
+            <div>
+                <h3 class="panel-title">Inventory Attention &amp; Recommendation Signals</h3>
+                <p class="panel-subtitle">Rule-based inventory evaluation combining sales velocity with days of stock coverage</p>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span class="kpi-badge badge-rose">{{ attention_summary.high_priority_count }} High Priority</span>
+            <span class="kpi-badge badge-amber">{{ attention_summary.medium_priority_count }} Medium Priority</span>
+            <a href="{{ url_for('recommendations') }}" class="btn btn-primary btn-sm" style="margin-left:6px;">View Full Recommendation Matrix &rarr;</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th class="text-right">Sales Velocity</th>
+                    <th class="text-right">Current Stock</th>
+                    <th class="text-right">Coverage</th>
+                    <th style="text-align:center;">Priority</th>
+                    <th>Signal &amp; Recommendation</th>
+                    <th style="text-align:right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in top_attention_items %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('product_detail', product_id=item.product_id) }}" style="font-weight:600; color:var(--text-main); text-decoration:none;">
+                            {{ item.product_name }}
+                        </a>
+                    </td>
+                    <td><span class="kpi-badge badge-indigo">{{ item.category }}</span></td>
+                    <td class="text-right font-mono font-bold">{{ item.sales_velocity }} /d</td>
+                    <td class="text-right font-mono font-bold">{{ item.current_stock }} units</td>
+                    <td class="text-right font-mono">
+                        {% if item.stock_coverage_days is not none %}
+                            <span class="kpi-badge {% if item.stock_coverage_days < 14.0 %}badge-rose{% else %}badge-amber{% endif %}">
+                                {{ item.stock_coverage_days }} d
+                            </span>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        <span class="kpi-badge {{ item.pri_badge }}" style="font-weight:700;">{{ item.priority }}</span>
+                    </td>
+                    <td>
+                        <span class="kpi-badge {{ item.rec_badge }}" style="font-weight:700;">{{ item.recommendation }}</span>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">{{ item.reason }}</div>
+                    </td>
+                    <td style="text-align:right;">
+                        <a href="{{ url_for('product_detail', product_id=item.product_id) }}" class="btn btn-outline btn-sm">Inspect SKU</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">
+                        All products currently maintain adequate inventory coverage.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Recent Transactions Table -->
+<div class="panel-card">
+    <div class="panel-header">
+        <div>
+            <h3 class="panel-title">Recent Sales Transactions</h3>
+            <p class="panel-subtitle">Latest transactional activity recorded in the SQLite database</p>
+        </div>
+        <a href="{{ url_for('sales') }}" class="btn btn-outline" style="font-size:0.78rem; padding:5px 12px;">View All Sales</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Sale ID</th>
+                    <th>Date</th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Store Branch</th>
+                    <th>City</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Catalog Price</th>
+                    <th class="text-right">Calculated Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in recent_sales %}
+                <tr>
+                    <td class="font-mono" style="color:#64748b;">#{{ sale.sale_id }}</td>
+                    <td class="font-mono">{{ sale.sale_date }}</td>
+                    <td class="font-bold">{{ sale.product_name }}</td>
+                    <td><span class="kpi-badge badge-indigo">{{ sale.category }}</span></td>
+                    <td>{{ sale.store_name }}</td>
+                    <td style="color:#64748b;">{{ sale.city }}</td>
+                    <td class="text-right font-bold">{{ sale.quantity }}</td>
+                    <td class="text-right font-mono">${{ "{:.2f}".format(sale.unit_price) }}</td>
+                    <td class="text-right font-mono font-bold" style="color:#0f172a;">${{ "{:.2f}".format(sale.total_amount) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align:center; padding:30px; color:#64748b;">No transaction records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<!-- =====================================================================
+     INVENTORY MANAGER & SYSTEM ADMINISTRATOR DASHBOARD
+     ===================================================================== -->
+<div class="page-header">
+    <div>
+        <h2 class="page-header-title">Executive Dashboard &amp; Visual Analytics Operations Center</h2>
+        <p class="page-header-subtitle">Real-time stock monitoring, operational transactions, replenishment workflows, and multi-dimensional sales analytics</p>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+        <a href="{{ url_for('add_product') }}" class="btn btn-outline"><span>🏷️</span> Add Product</a>
+        <a href="{{ url_for('add_sale') }}" class="btn btn-outline"><span>💳</span> Record Sale</a>
+        <a href="{{ url_for('add_restock') }}" class="btn btn-primary"><span>🔄</span> Restock</a>
+    </div>
+</div>
+
+{% if current_user and current_user.role in ['Administrator', 'System Administrator'] %}
+<!-- Administrator Notice Banner -->
+<div class="alert alert-info" style="margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
+    <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:1.25rem;">🛡️</span>
+        <div>
+            <strong>System Administrator Mode:</strong> Full enterprise governance active. You have complete operational, inventory, analytical, and user management authority.
+        </div>
+    </div>
+    <a href="{{ url_for('admin_users') }}" class="btn btn-primary btn-sm" style="white-space:nowrap;">
+        Manage Users &amp; Roles &rarr;
+    </a>
+</div>
+{% endif %}
+
+<!-- Manager Quick Actions Bar -->
+<div class="panel-card" style="margin-bottom: 24px; padding: 16px 20px;">
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.2rem;">⚡</span>
+            <strong style="color: var(--text-main); font-size: 0.95rem;">Manager Quick Actions:</strong>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <a href="{{ url_for('add_product') }}" class="btn btn-outline btn-sm">Add Product</a>
+            <a href="{{ url_for('add_sale') }}" class="btn btn-outline btn-sm">Record Sale</a>
+            <a href="{{ url_for('add_restock') }}" class="btn btn-primary btn-sm">Restock</a>
+            <a href="{{ url_for('inventory') }}" class="btn btn-outline btn-sm">View Inventory</a>
+            <a href="{{ url_for('analytics') }}" class="btn btn-outline btn-sm">View Analytics</a>
+            <a href="{{ url_for('recommendations') }}" class="btn btn-outline btn-sm">View Recommendations</a>
+            <a href="{{ url_for('reports') }}" class="btn btn-outline btn-sm">View Reports</a>
+        </div>
+    </div>
+</div>
+
+<!-- Shared Dashboard Filter Toolbar -->
+<div class="chart-filter-toolbar">
+    <div class="chart-filter-group" style="min-width: 180px;">
+        <label for="filter-preset">Date Preset</label>
+        <select id="filter-preset" class="form-control">
+            <option value="full" data-start="{{ bounds.presets.full.start }}" data-end="{{ bounds.presets.full.end }}" selected>Full Period (638 Days)</option>
+            <option value="2017" data-start="2017-01-01" data-end="2017-12-31">Year 2017</option>
+            <option value="2018" data-start="2018-01-01" data-end="{{ bounds.max_date }}">Year 2018</option>
+            <option value="30d" data-start="{{ bounds.presets['30d'].start }}" data-end="{{ bounds.presets['30d'].end }}">Last 30 Days</option>
+            <option value="90d" data-start="{{ bounds.presets['90d'].start }}" data-end="{{ bounds.presets['90d'].end }}">Last 90 Days</option>
+            <option value="180d" data-start="{{ bounds.presets['180d'].start }}" data-end="{{ bounds.presets['180d'].end }}">Last 180 Days</option>
+            <option value="custom">Custom Date Range</option>
+        </select>
+    </div>
+
+    <div class="chart-filter-group" style="max-width: 150px;">
+        <label for="filter-start-date">Start Date</label>
+        <input type="date" id="filter-start-date" value="{{ bounds.min_date }}" min="{{ bounds.min_date }}" max="{{ bounds.max_date }}">
+    </div>
+
+    <div class="chart-filter-group" style="max-width: 150px;">
+        <label for="filter-end-date">End Date</label>
+        <input type="date" id="filter-end-date" value="{{ bounds.max_date }}" min="{{ bounds.min_date }}" max="{{ bounds.max_date }}">
+    </div>
+
+    <div class="chart-filter-group" style="min-width: 160px;">
+        <label for="filter-category">Product Category</label>
+        <select id="filter-category">
+            <option value="all" selected>All Categories</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="chart-filter-group" style="min-width: 180px;">
+        <label for="filter-store">Store Branch</label>
+        <select id="filter-store">
+            <option value="all" selected>All Stores (50 Branches)</option>
+            {% for st in stores %}
+            <option value="{{ st.store_id }}">{{ st.store_name }} ({{ st.city }})</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="chart-filter-actions">
+        <button type="button" id="btn-apply-filters" class="btn btn-primary" style="height:38px;">Apply Filters</button>
+        <button type="button" id="btn-reset-filters" class="btn btn-outline" style="height:38px;">Reset</button>
+    </div>
+</div>
+
+<!-- All 7 Manager KPI Cards -->
+<div class="kpi-grid">
+    <!-- 1. Total Units Sold -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Total Units Sold</span>
+            <div class="kpi-icon-wrap icon-blue">📦</div>
+        </div>
+        <div class="kpi-value">{{ "{:,}".format(kpis.total_units_sold) }}</div>
+        <div class="kpi-footer">
+            <span>{{ "{:,}".format(kpis.total_transactions) }} Transactions</span>
+            <span class="kpi-badge badge-indigo">Sales Volume</span>
+        </div>
+    </div>
+
+    <!-- 2. Calculated Revenue -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Calculated Revenue</span>
+            <div class="kpi-icon-wrap icon-emerald">💰</div>
+        </div>
+        <div class="kpi-value">${{ "{:,.2f}".format(kpis.calculated_revenue) }}</div>
+        <div class="kpi-footer">
+            <span>Catalog Baseline Price</span>
+            <span class="kpi-badge badge-emerald">Calculated</span>
+        </div>
+    </div>
+
+    <!-- 3. Current Inventory -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Current Inventory</span>
+            <div class="kpi-icon-wrap icon-cyan">🏢</div>
+        </div>
+        <div class="kpi-value">{{ "{:,}".format(kpis.total_stock) }}</div>
+        <div class="kpi-footer">
+            <span>Physical Stock Units</span>
             <span class="kpi-badge badge-cyan">{{ kpis.total_inventory_records }} Store-SKUs</span>
         </div>
     </div>
 
-    <!-- 6. Low Stock Products -->
+    <!-- 4. Inventory Value -->
+    <div class="kpi-card">
+        <div class="kpi-header">
+            <span class="kpi-label">Inventory Value</span>
+            <div class="kpi-icon-wrap icon-emerald">💵</div>
+        </div>
+        <div class="kpi-value" style="color: #047857;">${{ "{:,.2f}".format(kpis.inventory_value) }}</div>
+        <div class="kpi-footer">
+            <span>Retail Valuation</span>
+            <span class="kpi-badge badge-emerald">Live Valuation</span>
+        </div>
+    </div>
+
+    <!-- 5. Low Stock -->
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Low Stock Alerts</span>
@@ -160,7 +773,7 @@
         </div>
     </div>
 
-    <!-- 7. Out of Stock -->
+    <!-- 6. Out of Stock -->
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Out of Stock</span>
@@ -173,16 +786,16 @@
         </div>
     </div>
 
-    <!-- 8. Healthy Stock -->
+    <!-- 7. Products Requiring Attention -->
     <div class="kpi-card">
         <div class="kpi-header">
-            <span class="kpi-label">Healthy Stock</span>
-            <div class="kpi-icon-wrap icon-emerald">✅</div>
+            <span class="kpi-label">Requiring Attention</span>
+            <div class="kpi-icon-wrap icon-rose">💡</div>
         </div>
-        <div class="kpi-value" style="color: #047857;">{{ "{:,}".format(kpis.normal_stock) }}</div>
+        <div class="kpi-value" style="color: #b91c1c;">{{ attention_summary.high_priority_count + attention_summary.medium_priority_count }}</div>
         <div class="kpi-footer">
-            <span>Meets / Exceeds Threshold</span>
-            <span class="kpi-badge badge-emerald">Normal</span>
+            <span>{{ attention_summary.high_priority_count }} High &bull; {{ attention_summary.medium_priority_count }} Medium Priority</span>
+            <span class="kpi-badge badge-rose">Recommendation</span>
         </div>
     </div>
 </div>
@@ -491,9 +1104,12 @@
         </table>
     </div>
 </div>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_scripts %}
+{% if not current_user or current_user.role != 'Store Associate' %}
 <!-- Local Chart.js library bundle with CDN fallback -->
 <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
 <script>
@@ -503,4 +1119,56 @@
 </script>
 <!-- Dashboard Interactive Charts Script -->
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% else %}
+<script>
+async function lookupAssociateStock() {
+    const pSelect = document.getElementById("assoc-product");
+    const sSelect = document.getElementById("assoc-store");
+    const resultBox = document.getElementById("assoc-result");
+    if (!pSelect || !sSelect || !resultBox) return;
+
+    const pId = pSelect.value;
+    const sId = sSelect.value;
+    if (!pId || !sId) return;
+
+    resultBox.innerHTML = '<span style="color:#64748b; font-size:0.85rem;">Checking current stock...</span>';
+    resultBox.style.display = 'block';
+
+    try {
+        const res = await fetch(`/api/inventory/${pId}/${sId}`);
+        if (!res.ok) throw new Error("Could not fetch inventory");
+        const data = await res.json();
+        
+        let statusBadge = '';
+        if (data.stock_on_hand === 0) {
+            statusBadge = '<span class="kpi-badge badge-rose">OUT OF STOCK</span>';
+        } else if (data.stock_on_hand < data.reorder_level) {
+            statusBadge = '<span class="kpi-badge badge-amber">LOW STOCK</span>';
+        } else {
+            statusBadge = '<span class="kpi-badge badge-emerald">HEALTHY</span>';
+        }
+
+        resultBox.innerHTML = `
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <strong style="font-size:1rem; color:#0f172a;">${data.product_name}</strong>
+                    ${statusBadge}
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; font-size:0.85rem; color:#475569;">
+                    <div><strong>Store:</strong> ${data.store_name} (${data.city})</div>
+                    <div><strong>Stock on Hand:</strong> <span style="font-weight:700; color:#0f172a;">${data.stock_on_hand} units</span></div>
+                    <div><strong>Reorder Threshold:</strong> ${data.reorder_level} units</div>
+                    <div><strong>Catalog Selling Price:</strong> <span style="font-weight:700; color:#059669;">$${data.selling_price.toFixed(2)}</span></div>
+                </div>
+                <div style="margin-top:12px;">
+                    <a href="/sales/add" class="btn btn-primary btn-sm">Proceed to Record Sale &rarr;</a>
+                </div>
+            </div>
+        `;
+    } catch(err) {
+        resultBox.innerHTML = '<span style="color:#ef4444; font-size:0.85rem;">Unable to load stock information for selected branch.</span>';
+    }
+}
+</script>
+{% endif %}
 {% endblock %}

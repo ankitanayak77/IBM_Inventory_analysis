@@ -366,40 +366,88 @@ http://127.0.0.1:5000
 
 ## 24. Enterprise Authentication & Role-Based Access Control (RBAC)
 
-The application features a production-hardened authentication architecture designed for enterprise security and multi-role operations:
+The application features a production-hardened, authoritative server-side authentication and Role-Based Access Control (RBAC) architecture designed for multi-tier retail operations.
 
-### Security Highlights
-- **Password Security:** Passwords hashed using **scrypt** (Werkzeug 3.0+ default key derivation algorithm: `scrypt:32768:8:1`) with minimum 8 characters, character variety rules, and a common weak password blacklist. Plaintext passwords are never stored or logged.
-- **Least-Privilege Public Registration:** Public self-registration (`/signup`) unconditionally assigns the least-privileged **Store Associate** role. Administrative escalation is strictly barred.
-- **Role Hierarchy & Governance:** Four operational roles enforced server-side via `@login_required` and `@role_required(...)`:
-  - `Administrator`: Full access, user governance (`/admin/users`), role management, account activation.
-  - `Inventory Manager`: Master catalog, inbound restocking, physical inventory, POS transactions, analytics, reports.
-  - `Data Analyst`: Executive dashboard, velocity analytics, recommendation engine, reporting previews, and Power BI datasets.
-  - `Store Associate`: Day-to-day POS checkout operations and physical stock lookup.
-- **CSRF Protection:** State-changing POST requests across all modules are protected by `Flask-WTF` (`CSRFProtect`).
-- **Brute-Force & Abuse Defense:** Accounts are temporarily locked for 15 minutes following 5 consecutive failed sign-in attempts (`locked_until`). Timing attacks are mitigated via dummy hash checks.
-- **Session Security:** `SESSION_COOKIE_HTTPONLY = True`, `SESSION_COOKIE_SAMESITE = 'Lax'`, configurable `Secure` cookie flag for HTTPS, explicit 7-day session lifetime, and session fixation defense via `session.clear()`.
-- **Branded Error Handling:** Custom branded pages for `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, and `500 Server Error`.
+### Final User Roles & Access Matrix
 
-### User Profile & Account Management
+The system implements exactly four operational roles:
 
-Authenticated users can manage their personal identity and security settings from the navigation avatar menu:
-- **My Profile (`/profile`):** Displays account metadata (Full Name, Email, User ID, Role badge, Account Status, Creation Date, Last Login, and Role Permission Scope).
-- **Edit Profile (`/profile/edit`):** Allows users to update their **Full Name** (2–60 characters) and **Email Address** (normalized lowercase, validated uniqueness).
-  - *Email Change Security Policy:* Changing the account sign-in email strictly requires **Current Password Confirmation** to prevent unauthorized identity reassignment.
-  - *Role & ID Immutability:* User ID, operational role, account status, and registration date cannot be modified by the user.
-- **Change Password (`/profile/password`):** Secure password updates enforcing current password verification, complex password policies (min 8 chars, letters + numbers/symbols, weak password blacklist), confirmation matching, and scrypt hash generation.
-  - *Session Termination:* Upon a successful password update, all active sessions are invalidated immediately (`session.clear()`), requiring the user to authenticate with their new credentials.
-- **Local Identity Notice:** Email addresses serve as unique local sign-in identities within SQLite. The application does not claim external email verification or transmit outbound SMTP tokens.
+| Role | Public Signup? | Permitted Modules & Operations | Restricted / Barred Operations |
+| :--- | :---: | :--- | :--- |
+| **System Administrator** | ❌ Excluded | Full operational, analytical, reporting, catalog, inventory, and governance access (`/admin/users`). Can view all accounts, modify user roles, and toggle account activation status. | Universal access across all application boundaries. |
+| **Inventory Manager** | ✅ Selectable | Dashboard (full view), Products (add/edit/deactivate), Inventory, Sales POS, Restocking (`/restock/add`), Velocity Analytics, Inventory Recommendations, Reports, Power BI data exports, and My Profile. | Barred from User & Role Governance (`/admin/users`). Direct access returns `HTTP 403 Forbidden`. |
+| **Data Analyst** | ✅ Selectable | Dashboard (analytical workspace), Inventory (read-only), Sales (read-only), Velocity Analytics (`/analytics`), Recommendations (`/recommendations`), Reports (`/reports` & `/powerbi`), Power BI exports, and My Profile. | Barred from operational stock-altering actions (`/products/add`, `/restock/add`) and User Governance (`/admin/users`). Direct access returns `HTTP 403 Forbidden`. |
+| **Store Associate** | ✅ Selectable | Dashboard (POS terminal & live stock lookup), Point-of-Sale Transactions (`/sales/add`), Physical Stock Lookup (`/inventory`), and My Profile. | Barred from Product Catalog administration, Restocking, Analytics, Recommendations, Reports/Power BI, and User Governance. Direct access returns `HTTP 403 Forbidden`. |
 
-### Development / Demo Accounts
+### Public Sign-Up & Configurable Role Selection (`/signup`)
+- **Publicly Selectable Roles:** New visitors creating an account on `/signup` can select from:
+  - `Store Associate`
+  - `Data Analyst`
+  - `Inventory Manager`
+- **System Administrator is Strictly Excluded:** The administrative governance role is never selectable in the public sign-up interface. Server-side validation rejects any attempt to register an administrator account with `HTTP 400 Bad Request`.
+- **Configurability:** Public role selection is controlled by `ALLOW_PUBLIC_ROLE_SELECTION` (default: `True` in `config.py`). When set to `False`, all new registrations default strictly to least-privileged `Store Associate`.
+- **Immediate Role Activation:** For college/portfolio demonstration, the selected registration role is stored in SQLite and immediately controls application authorization upon automatic login.
 
-For local demonstration, evaluation, and automated testing only, demo accounts are pre-seeded with development passwords configurable via environment variables:
+### Email Validation & Normalization
+- **Authoritative Server-Side Validation:** Enforces strict RFC-compliant email structure (`local_part@domain.tld`):
+  - Exactly one `@` symbol
+  - Non-empty username before `@` without invalid special characters
+  - Non-empty domain after `@` with valid dot segments and top-level domain (`len(tld) >= 2`)
+  - No whitespace characters
+- **Client-Side Immediate Feedback:** Real-time JavaScript validation in `signup.html` and `login.html` provides instant visual confirmation and prevents erroneous submissions.
+- **Rejected Malformed Patterns:** `ankitgmail.com` (missing `@`), `ankit@` (missing domain), `@gmail.com` (missing local part), `ankit @gmail.com` (whitespace), `ankit@gmail` (missing TLD), `ankit.com` (missing `@`).
+- **Accepted Patterns:** `ankit@gmail.com`, `user@example.com`.
+- **Lowercase Normalization:** All emails are converted to lowercase before database query, uniqueness check, and storage. `ANKIT@GMAIL.COM` and `ankit@gmail.com` map to the identical account. Duplicate emails are cleanly rejected.
+
+### Password Security & Policies
+- **Scrypt Password Hashing:** Passwords hashed with Werkzeug `scrypt:32768:8:1`. Plaintext passwords are never stored, transmitted in logs, or placed in session cookies.
+- **Complexity Requirements:** Minimum 8 characters, requiring at least one letter and at least one digit or special character.
+- **Common Weak Password Blacklist:** Prevents trivial passwords (`password123`, `admin123`, `12345678`, etc.).
+- **Confirmation Matching:** Password and Confirm Password must match identically.
+
+### Sign-In Role Verification Consistency Check (`/login`)
+- **Required Fields:** Email, Password, and Role selector (`System Administrator`, `Inventory Manager`, `Data Analyst`, `Store Associate`).
+- **Security Rule:** Selecting a role on the login form is an **authentication consistency check**—it does NOT grant or elevate privileges.
+- **Authoritative Backend Flow:**
+  1. Find user by normalized lowercase email.
+  2. Verify password cryptographic hash (`check_password_hash`).
+  3. Verify account is active (`is_active == 1`).
+  4. Verify account is not locked (`locked_until == NULL` or expired).
+  5. **Verify selected login role matches the stored role in the database.**
+  6. Only establish authenticated session if all checks pass.
+- **Generic Error Response:** If the password is correct but the user selects a role that does not match their stored database role, authentication is rejected with:
+  > *"Invalid email, password, or role."*
+- **Enumeration Defense:** The system never reveals whether email, password, or role was incorrect, mitigating user enumeration attacks.
+- *Role selection during login is verified against the role stored for the authenticated account. Selecting a different role does not grant additional permissions.*
+
+### Server-Side Authorization & Direct URL Defense
+- Never trusts frontend role data, JavaScript state, cookies, or query parameters.
+- Protected routes use `@auth_service.login_required` and `@auth_service.role_required(...)`.
+- Direct URL tampering (e.g. Store Associate navigating to `/analytics` or `/restock/add`, Data Analyst navigating to `/products/add`, or Inventory Manager navigating to `/admin/users`) is trapped server-side and returns `HTTP 403 Forbidden` with a branded security page.
+- API endpoints (`/api/analytics/*`, `/api/recommendations*`, `/api/dashboard/*`) enforce role requirements and return `HTTP 401 Unauthorized` or `HTTP 403 Forbidden` JSON payloads.
+
+### Role-Aware Dynamic Dashboard (`/dashboard`)
+The application features a single, unified `/dashboard` route that renders dynamically based on the authenticated user's role:
+- **Inventory Manager:** Complete executive and operational overview with 7 KPI cards (Total Units Sold, Calculated Revenue, Current Inventory, Inventory Value, Low Stock, Out of Stock, Attention Flagged), Manager Quick Actions bar, 9 interactive Chart.js visualizations, replenishment decision support table with Restock buttons, and recent transactions.
+- **System Administrator:** All Inventory Manager capabilities plus an Administrator Governance alert banner linking directly to `/admin/users`.
+- **Data Analyst:** Analysis-focused workspace highlighting Sales Velocity (units/SKU/day), Movement Distribution (Fast/Normal/Slow percentiles), Recommendation signals, Category revenue mix, trend charts, and read-only Attention Review table without stock-altering controls.
+- **Store Associate:** Streamlined operational terminal emphasizing POS checkout ("Record New Sale"), live interactive Stock Availability Lookup widget, operational stock KPI cards (Stock on Hand, Healthy, Low Stock, Out of Stock), and recent sales activity without analytical charts or management clutter.
+
+### User Profiles & Account Management
+- **My Profile (`/profile`):** Displays account metadata (Full Name, Email, User ID, Role badge, Account Status, Creation Date, Last Login).
+- **Edit Profile (`/profile/edit`):** Users can edit Full Name and Email. Changing Email strictly requires Current Password verification.
+- **Immutable Attributes:** User ID, Role, and Account Status cannot be changed by the user; updates are bound to `session["user_id"]` (preventing IDOR).
+- **Change Password (`/profile/password`):** Verifies current password, enforces password complexity, generates new scrypt hash, and invalidates active sessions (`session.clear()`).
+- **User Governance (`/admin/users`):** Administrator-only portal to view all users, update operational roles, and activate/deactivate accounts.
+
+### Development / Seeded Accounts
+
+For local demonstration, evaluation, and automated testing only, accounts are pre-seeded with development passwords configurable via environment variables:
 
 | Role | Email | Default Dev Password | Scope of Access |
 | :--- | :--- | :--- | :--- |
 | **System Administrator** | `admin@inventory.com` | `AdminDev@2026` | Full access + User & Role Governance (`/admin/users`) |
-| **Inventory Manager** | `manager@inventory.com` | `ManagerDev@2026` | Catalog, Stock, Restock POS, Analytics & Reports |
+| **Inventory Manager** | `manager@inventory.com` | `ManagerDev@2026` | Master Catalog, Stock, Restock POS, Analytics & Reports |
 | **Data Analyst** | `analyst@inventory.com` | `AnalystDev@2026` | Executive Dashboard, Velocity Analytics, Reports & BI Exports |
 | **Store Associate** | `associate@inventory.com` | `AssociateDev@2026` | POS Transactions, Physical Stock Lookup |
 

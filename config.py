@@ -36,7 +36,8 @@ class Config:
     MAX_FAILED_LOGIN_ATTEMPTS = int(os.environ.get("MAX_FAILED_LOGIN_ATTEMPTS", "5"))
     LOCKOUT_DURATION_MINUTES = int(os.environ.get("LOCKOUT_DURATION_MINUTES", "15"))
 
-    # Development Demo Accounts (Configured via env vars; never hardcoded in production)
+    # Public Role Selection Control (Configurable for academic/demo environment)
+    ALLOW_PUBLIC_ROLE_SELECTION = os.environ.get("ALLOW_PUBLIC_ROLE_SELECTION", "true").lower() in ("true", "1", "yes")
     DEMO_ACCOUNTS_ENABLED = os.environ.get("DEMO_ACCOUNTS_ENABLED", "true").lower() in ("true", "1", "yes")
     DEMO_ADMIN_PASSWORD = os.environ.get("DEMO_ADMIN_PASSWORD", "AdminDev@2026")
     DEMO_MANAGER_PASSWORD = os.environ.get("DEMO_MANAGER_PASSWORD", "ManagerDev@2026")

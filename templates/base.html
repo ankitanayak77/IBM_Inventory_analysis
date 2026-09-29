@@ -27,30 +27,56 @@
         </div>
 
         <nav class="sidebar-nav">
-            <div class="nav-section-title">Core Management</div>
+            <div class="nav-section-title">
+                {% if current_user and current_user.role == 'Store Associate' %}
+                    Store Operations
+                {% else %}
+                    Core Management
+                {% endif %}
+            </div>
+            
             <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.path in ['/', '/dashboard'] %}active{% endif %}">
                 <span class="nav-icon">📊</span>
                 <span>Dashboard</span>
             </a>
+
+            {% if not current_user or current_user.role in ['Administrator', 'System Administrator', 'Inventory Manager'] %}
             <a href="{{ url_for('products') }}" class="nav-link {% if request.path.startswith('/products') %}active{% endif %}">
                 <span class="nav-icon">🏷️</span>
                 <span>Products</span>
                 <span class="nav-badge">Catalog</span>
             </a>
+            {% endif %}
+
+            {% if not current_user or current_user.role != 'Store Associate' %}
             <a href="{{ url_for('inventory') }}" class="nav-link {% if request.path.startswith('/inventory') %}active{% endif %}">
                 <span class="nav-icon">🏢</span>
                 <span>Inventory</span>
                 <span class="nav-badge">Stock</span>
             </a>
+            {% endif %}
+
             <a href="{{ url_for('sales') }}" class="nav-link {% if request.path.startswith('/sales') %}active{% endif %}">
                 <span class="nav-icon">💳</span>
                 <span>Sales</span>
             </a>
+
+            {% if current_user and current_user.role == 'Store Associate' %}
+            <a href="{{ url_for('inventory') }}" class="nav-link {% if request.path.startswith('/inventory') %}active{% endif %}">
+                <span class="nav-icon">🏢</span>
+                <span>Inventory Lookup</span>
+                <span class="nav-badge">Stock</span>
+            </a>
+            {% endif %}
+
+            {% if not current_user or current_user.role in ['Administrator', 'System Administrator', 'Inventory Manager'] %}
             <a href="{{ url_for('restock') }}" class="nav-link {% if request.path.startswith('/restock') %}active{% endif %}">
                 <span class="nav-icon">🔄</span>
                 <span>Restock</span>
             </a>
+            {% endif %}
 
+            {% if not current_user or current_user.role in ['Administrator', 'System Administrator', 'Inventory Manager', 'Data Analyst'] %}
             <div class="nav-section-title">Intelligence & BI</div>
             <a href="{{ url_for('analytics') }}" class="nav-link {% if request.path.startswith('/analytics') %}active{% endif %}">
                 <span class="nav-icon">📈</span>
@@ -61,10 +87,11 @@
                 <span>Recommendations</span>
                 <span class="nav-badge" style="background:#fef3c7; color:#92400e;">Rules</span>
             </a>
-            <a href="{{ url_for('reports') }}" class="nav-link {% if request.path.startswith('/reports') %}active{% endif %}">
+            <a href="{{ url_for('reports') }}" class="nav-link {% if request.path.startswith('/reports') or request.path.startswith('/powerbi') %}active{% endif %}">
                 <span class="nav-icon">📑</span>
                 <span>Reports & BI</span>
             </a>
+            {% endif %}
 
             {% if current_user %}
             <div class="nav-section-title">My Account</div>
@@ -74,7 +101,7 @@
             </a>
             {% endif %}
 
-            {% if current_user and current_user.role == 'Administrator' %}
+            {% if current_user and current_user.role in ['Administrator', 'System Administrator'] %}
             <div class="nav-section-title">Administration</div>
             <a href="{{ url_for('admin_users') }}" class="nav-link {% if request.path.startswith('/admin') %}active{% endif %}">
                 <span class="nav-icon">🛡️</span>

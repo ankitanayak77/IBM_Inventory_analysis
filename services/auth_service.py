@@ -22,7 +22,76 @@ ROLE_ANALYST = "Data Analyst"
 ROLE_ASSOCIATE = "Store Associate"
 
 ALL_ROLES = [ROLE_ADMIN, ROLE_MANAGER, ROLE_ANALYST, ROLE_ASSOCIATE]
-DEFAULT_PUBLIC_ROLE = ROLE_ASSOCIATE  # Least-privileged role for public registration
+DEFAULT_PUBLIC_ROLE = ROLE_ASSOCIATE  # Default role for public registration fallback
+PUBLIC_SELECTABLE_ROLES = [ROLE_MANAGER, ROLE_ANALYST, ROLE_ASSOCIATE]
+
+def canonicalize_role(role_name):
+    """
+    Standardize role names to ensure consistent comparison.
+    Maps 'System Administrator' to 'Administrator' and trims whitespace.
+    """
+    if not role_name:
+        return ""
+    r = role_name.strip()
+    if r in ("Administrator", "System Administrator"):
+        return ROLE_ADMIN
+    return r
+
+def validate_email_format(email):
+    """
+    Strict email validation:
+    - No whitespace anywhere
+    - Exactly one '@' symbol
+    - Non-empty local part and domain part
+    - Local part allows letters, numbers, dot, underscore, plus, hyphen
+    - Domain part must have at least one dot
+    - Domain parts cannot be empty (no leading, trailing, or double dots)
+    - TLD must be at least 2 alphabetic characters
+    - Rejects: ankitgmail.com, ankit@, @gmail.com, ankit @gmail.com, ankit@gmail, ankit.com
+    - Accepts: ankit@gmail.com, user@example.com
+    """
+    if not email or not isinstance(email, str):
+        return False, "Please enter a valid email address. Email address is required."
+
+    email = email.strip()
+    if not email:
+        return False, "Please enter a valid email address. Email address cannot be empty."
+
+    if re.search(r"\s", email):
+        return False, "Please enter a valid email address. Email address cannot contain spaces."
+
+    if email.count("@") != 1:
+        return False, "Please enter a valid email address containing exactly one '@' symbol."
+
+    local_part, domain_part = email.split("@", 1)
+    if not local_part:
+        return False, "Please enter a valid email address. Recipient username before '@' is missing."
+    if not domain_part:
+        return False, "Please enter a valid email address. Domain name after '@' is missing."
+
+    if not re.match(r"^[a-zA-Z0-9_.+-]+$", local_part):
+        return False, "Please enter a valid email address. Recipient username contains invalid characters."
+
+    if "." not in domain_part:
+        return False, "Please enter a valid email address. Domain must include a top-level domain (e.g., .com)."
+
+    domain_parts = domain_part.split(".")
+    if any(len(p) == 0 for p in domain_parts):
+        return False, "Please enter a valid email address. Domain contains empty segment or consecutive dots."
+
+    tld = domain_parts[-1]
+    if not re.match(r"^[a-zA-Z]{2,}$", tld):
+        return False, "Please enter a valid email address. Domain must end with a valid top-level domain (e.g., .com)."
+
+    for part in domain_parts:
+        if not re.match(r"^[a-zA-Z0-9-]+$", part) or part.startswith("-") or part.endswith("-"):
+            return False, "Please enter a valid email address. Domain contains invalid characters or misplaced hyphens."
+
+    email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$"
+    if not re.match(email_regex, email) or len(email) > 120:
+        return False, "Please enter a valid email address (e.g., user@example.com)."
+
+    return True, None
 
 # Common weak passwords blacklist
 COMMON_WEAK_PASSWORDS = frozenset([
@@ -122,22 +191,54 @@ def validate_password_strength(password):
 def register_user(name, email, password, confirm_password, role=None):
     """
     Validate and register a new user account.
-    Security policy: Public registration always assigns DEFAULT_PUBLIC_ROLE (Store Associate).
+    - Full Name (2-60 chars)
+    - Email validation (strictly verified with @ and valid domain structure)
+    - Role assignment:
+        - If ALLOW_PUBLIC_ROLE_SELECTION is True: allows Store Associate, Data Analyst, Inventory Manager.
+        - System Administrator is strictly blocked from public registration.
+        - If disabled or invalid: defaults to DEFAULT_PUBLIC_ROLE (Store Associate).
+    - Password validation: minimum 8 characters, complexity rules.
+    - Password hashing: Werkzeug scrypt hashing.
+    - Normalized lowercase email storage & uniqueness enforcement.
     """
     name = (name or "").strip()
     email = (email or "").strip().lower()
     password = password or ""
     confirm_password = confirm_password or ""
 
-    # Always enforce least-privileged role for public registration
-    assigned_role = DEFAULT_PUBLIC_ROLE
-
     if not name or len(name) < 2 or len(name) > 60:
         return {"success": False, "message": "Full name must be between 2 and 60 characters.", "user": None}
 
-    email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
-    if not email or not re.match(email_regex, email) or len(email) > 120:
-        return {"success": False, "message": "Please enter a valid work email address.", "user": None}
+    is_valid_email, email_err = validate_email_format(email)
+    if not is_valid_email:
+        return {"success": False, "message": email_err, "user": None}
+
+    # Role resolution & security checks
+    allow_public_role = current_app.config.get("ALLOW_PUBLIC_ROLE_SELECTION", True)
+    assigned_role = DEFAULT_PUBLIC_ROLE
+
+    if role:
+        cleaned_role = role.strip()
+        # Strictly block administrative privilege escalation
+        if canonicalize_role(cleaned_role) == ROLE_ADMIN:
+            return {
+                "success": False,
+                "message": "System Administrator accounts cannot be created via public registration.",
+                "user": None
+            }
+
+        if allow_public_role:
+            if cleaned_role in PUBLIC_SELECTABLE_ROLES:
+                assigned_role = cleaned_role
+            else:
+                return {
+                    "success": False,
+                    "message": f"Invalid role selected: '{cleaned_role}'. Choose from Store Associate, Data Analyst, or Inventory Manager.",
+                    "user": None
+                }
+        else:
+            # Public selection disabled; force default least-privileged role
+            assigned_role = DEFAULT_PUBLIC_ROLE
 
     is_valid_pw, pw_err = validate_password_strength(password)
     if not is_valid_pw:
@@ -166,18 +267,26 @@ def register_user(name, email, password, confirm_password, role=None):
         "role": assigned_role,
         "is_active": 1
     }
-    return {"success": True, "message": f"Account created successfully! Welcome to Smart Inventory, {name}.", "user": user}
+    return {
+        "success": True,
+        "message": f"Welcome, {name}. You are signed in as {assigned_role}.",
+        "user": user
+    }
 
-def authenticate_user(email, password):
+def authenticate_user(email, password, selected_role=None):
     """
-    Authenticate user by email and password with brute-force lockout protection.
+    Authenticate user by email and password with role consistency check and brute-force lockout protection.
     Returns generic error messages to prevent account enumeration.
+    
+    The selected_role parameter verifies that the role chosen on the login screen
+    matches the authoritative database-stored role. Selecting an elevated role
+    does not grant access.
     """
     email = (email or "").strip().lower()
     password = password or ""
 
     if not email or not password:
-        return {"success": False, "message": "Invalid email or password.", "user": None}
+        return {"success": False, "message": "Invalid email, password, or role.", "user": None}
 
     conn = db.get_db()
     user_row = conn.execute("""
@@ -190,7 +299,7 @@ def authenticate_user(email, password):
     # Generic timing-attack defense: run dummy hash comparison if user not found
     if not user_row:
         check_password_hash("scrypt:32768:8:1$pWrlq0Jk38yxKdiG$a0c7b3699a70ce5e1a14b06dd06c5837067d447129899de6cbd45d5de21808335a8a67b70e1d58eeda7a5a4f11a7b85cb3346c90a26d060d36df60a544446db2", password)
-        return {"success": False, "message": "Invalid email or password.", "user": None}
+        return {"success": False, "message": "Invalid email, password, or role.", "user": None}
 
     user_id = user_row["user_id"]
     is_active = user_row["is_active"]
@@ -227,12 +336,12 @@ def authenticate_user(email, password):
         except Exception:
             pass
 
-    # Verify password hash
+    max_attempts = current_app.config.get("MAX_FAILED_LOGIN_ATTEMPTS", 5)
+    lockout_mins = current_app.config.get("LOCKOUT_DURATION_MINUTES", 15)
+
+    # 1. Verify password hash
     if not check_password_hash(user_row["password_hash"], password):
         failed_attempts += 1
-        max_attempts = current_app.config.get("MAX_FAILED_LOGIN_ATTEMPTS", 5)
-        lockout_mins = current_app.config.get("LOCKOUT_DURATION_MINUTES", 15)
-
         if failed_attempts >= max_attempts:
             lockout_time = now + datetime.timedelta(minutes=lockout_mins)
             conn.execute("""
@@ -250,7 +359,31 @@ def authenticate_user(email, password):
         else:
             conn.execute("UPDATE users SET failed_login_attempts = ? WHERE user_id = ?;", (failed_attempts, user_id))
             conn.commit()
-            return {"success": False, "message": "Invalid email or password.", "user": None}
+            return {"success": False, "message": "Invalid email, password, or role.", "user": None}
+
+    # 2. Verify selected login role consistency check (does NOT grant privileges)
+    if selected_role is not None:
+        selected_role_clean = selected_role.strip()
+        if not selected_role_clean or canonicalize_role(selected_role_clean) != canonicalize_role(user_row["role"]):
+            failed_attempts += 1
+            if failed_attempts >= max_attempts:
+                lockout_time = now + datetime.timedelta(minutes=lockout_mins)
+                conn.execute("""
+                    UPDATE users
+                    SET failed_login_attempts = ?, locked_until = ?
+                    WHERE user_id = ?;
+                """, (failed_attempts, lockout_time.isoformat(), user_id))
+                conn.commit()
+                return {
+                    "success": False,
+                    "message": f"Account temporarily locked due to {failed_attempts} failed login attempts. Please try again in {lockout_mins} minutes.",
+                    "user": None,
+                    "locked": True
+                }
+            else:
+                conn.execute("UPDATE users SET failed_login_attempts = ? WHERE user_id = ?;", (failed_attempts, user_id))
+                conn.commit()
+                return {"success": False, "message": "Invalid email, password, or role.", "user": None}
 
     # Successful authentication: reset failed attempts & update last_login_at
     conn.execute("""
@@ -333,12 +466,8 @@ def role_required(*allowed_roles):
     """
     Decorator enforcing role-based access control (RBAC).
     Returns 403 Forbidden page or JSON for unauthorized users.
+    Uses canonicalize_role for robust role equivalence (e.g. System Administrator vs Administrator).
     """
-    # Accept both "Administrator" and "System Administrator" for admin checks
-    allowed_set = set(allowed_roles)
-    if ROLE_ADMIN in allowed_set or "System Administrator" in allowed_set:
-        allowed_set.update([ROLE_ADMIN, "System Administrator"])
-
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -353,7 +482,10 @@ def role_required(*allowed_roles):
                 return redirect(url_for("login", next=request.path))
 
             user_role = session.get("user_role")
-            if user_role not in allowed_set:
+            canonical_user_role = canonicalize_role(user_role)
+            canonical_allowed = {canonicalize_role(r) for r in allowed_roles}
+
+            if canonical_user_role not in canonical_allowed:
                 if request.path.startswith("/api/") or request.headers.get("Accept") == "application/json":
                     return jsonify({
                         "error": "Forbidden",
@@ -465,9 +597,9 @@ def update_user_profile(user_id, name, email, current_password=None):
 
     # Validate email
     email = (email or "").strip().lower()
-    email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
-    if not email or not re.match(email_regex, email) or len(email) > 120:
-        return {"success": False, "message": "Please enter a valid email address."}
+    is_valid_email, email_err = validate_email_format(email)
+    if not is_valid_email:
+        return {"success": False, "message": email_err}
 
     current_email = (user_row["email"] or "").strip().lower()
     email_changed = (email != current_email)
