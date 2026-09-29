@@ -442,17 +442,19 @@ The application features a single, unified `/dashboard` route that renders dynam
 
 ### Development / Seeded Accounts
 
-For local demonstration, evaluation, and automated testing only, accounts are pre-seeded with development passwords configurable via environment variables:
+Development/demo credentials are configured locally through environment variables and are not stored in committed documentation.
 
-| Role | Email | Default Dev Password | Scope of Access |
-| :--- | :--- | :--- | :--- |
-| **System Administrator** | `admin@inventory.com` | `AdminDev@2026` | Full access + User & Role Governance (`/admin/users`) |
-| **Inventory Manager** | `manager@inventory.com` | `ManagerDev@2026` | Master Catalog, Stock, Restock POS, Analytics & Reports |
-| **Data Analyst** | `analyst@inventory.com` | `AnalystDev@2026` | Executive Dashboard, Velocity Analytics, Reports & BI Exports |
-| **Store Associate** | `associate@inventory.com` | `AssociateDev@2026` | POS Transactions, Physical Stock Lookup |
+For local demonstration, evaluation, and automated testing, the pre-seeded account emails and their designated role scopes are:
 
-> [!WARNING]
-> These demo credentials are strictly for local evaluation and regression testing. They are not displayed on the user-facing sign-in page. In production deployments, demo accounts must be deleted or secured with strong environment-provided secrets.
+| Role | Account Email | Scope of Access |
+| :--- | :--- | :--- |
+| **System Administrator** | `admin@inventory.com` | Full access + User & Role Governance (`/admin/users`) |
+| **Inventory Manager** | `manager@inventory.com` | Master Catalog, Stock, Restock POS, Analytics & Reports |
+| **Data Analyst** | `analyst@inventory.com` | Executive Dashboard, Velocity Analytics, Reports & BI Exports |
+| **Store Associate** | `associate@inventory.com` | POS Transactions, Physical Stock Lookup |
+
+> [!NOTE]
+> Development/demo credentials are configured locally through environment variables and are not stored in committed documentation. Demo accounts are maintained for local evaluation and automated regression testing. In production deployments, demo accounts must be disabled or secured with strong environment-provided secrets.
 
 ---
 

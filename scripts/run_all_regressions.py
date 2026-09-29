@@ -50,16 +50,16 @@ def run_all():
     failed_suites = []
 
     for name, script_path in TEST_SUITES:
-        print(f"\n---> Running: {name} ({script_path})")
+        print(f"\n---> Running: {name} ({script_path})", flush=True)
         t0 = time.time()
         res = subprocess.run([sys.executable, str(BASE_DIR / script_path)], capture_output=True, text=True)
         elapsed = time.time() - t0
 
         if res.returncode == 0:
             passed_count += 1
-            print(f"     [PASS] {name} completed successfully in {elapsed:.2f}s")
+            print(f"     [PASS] {name} completed successfully in {elapsed:.2f}s", flush=True)
         else:
-            print(f"     [FAIL] {name} failed with exit code {res.returncode} in {elapsed:.2f}s")
+            print(f"     [FAIL] {name} failed with exit code {res.returncode} in {elapsed:.2f}s", flush=True)
             print("STDOUT:")
             print(res.stdout[-1000:] if len(res.stdout) > 1000 else res.stdout)
             print("STDERR:")

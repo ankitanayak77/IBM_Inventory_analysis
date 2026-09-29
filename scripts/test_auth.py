@@ -365,6 +365,8 @@ def run_tests():
             conn = db.get_db()
             role_chk = conn.execute("SELECT role FROM users WHERE email = 'manager@inventory.com';").fetchone()["role"]
             assert role_chk == "Inventory Manager", f"Privilege escalation bug! Manager changed role to {role_chk}"
+            conn.execute("UPDATE users SET name = 'Inventory Manager' WHERE email = 'manager@inventory.com';")
+            conn.commit()
         print("[33/40] User cannot modify role via profile update: PASS")
 
         # 34. CSRF protection
