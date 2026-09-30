@@ -2,27 +2,28 @@
 
 {% block title %}User & Role Governance{% endblock %}
 {% block breadcrumb %}
-<a href="{{ url_for('dashboard') }}" style="color:inherit; text-decoration:none;">Dashboard</a>
-<span>/</span>
+<span class="breadcrumb-space">Administration</span>
+<span class="breadcrumb-separator">/</span>
 <span class="breadcrumb-active">User Governance</span>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h2 class="page-header-title">System User & Role Governance</h2>
+        <h2 class="page-header-title">System User &amp; Role Governance</h2>
         <p class="page-header-subtitle">Manage system accounts, assign operational roles, and enforce security policies</p>
     </div>
-    <div class="header-tag" style="background:#eef2ff; border-color:#c7d2fe; color:#4338ca;">
-        <span>🛡️</span> Administrator View Only
+    <div class="header-tag" style="background:var(--brand-subtle); border-color:var(--brand-light); color:var(--brand-hover);">
+        <span class="btn-icon">{{ icon('shield', 14) }}</span>
+        <span>Administrator View Only</span>
     </div>
 </div>
 
 <div class="panel-card">
     <div class="panel-header">
         <div>
-            <div class="panel-title">Registered Accounts ({{ users|length }})</div>
-            <div class="panel-subtitle">Role permissions: Administrator, Inventory Manager, Data Analyst, Store Associate</div>
+            <h4 class="panel-title">Registered Accounts ({{ users|length }})</h4>
+            <p class="panel-subtitle">Role permissions: Administrator, Inventory Manager, Data Analyst, Store Associate</p>
         </div>
     </div>
 
@@ -36,7 +37,7 @@
                     <th>Operational Role</th>
                     <th>Status</th>
                     <th>Last Login</th>
-                    <th>Failed Logins</th>
+                    <th style="text-align:center;">Failed Logins</th>
                     <th class="text-right">Actions</th>
                 </tr>
             </thead>
@@ -69,9 +70,9 @@
                     </td>
                     <td class="font-mono" style="font-size:0.8rem; text-align:center;">
                         {% if u.failed_login_attempts > 0 %}
-                        <span style="color:#ef4444; font-weight:600;">{{ u.failed_login_attempts }}</span>
+                        <span style="color:var(--danger); font-weight:600;">{{ u.failed_login_attempts }}</span>
                         {% else %}
-                        <span style="color:#10b981;">0</span>
+                        <span style="color:var(--success);">0</span>
                         {% endif %}
                     </td>
                     <td class="text-right">

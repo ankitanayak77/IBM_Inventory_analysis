@@ -2,8 +2,8 @@
 
 {% block title %}Sign Up{% endblock %}
 {% block breadcrumb %}
-<span>Authentication</span>
-<span>/</span>
+<span class="breadcrumb-space">Authentication</span>
+<span class="breadcrumb-separator">/</span>
 <span class="breadcrumb-active">Sign Up</span>
 {% endblock %}
 
@@ -12,16 +12,18 @@
     <div class="auth-card" style="max-width: 480px;">
         <!-- Auth Header -->
         <div class="auth-header">
-            <div class="auth-brand-icon">✨</div>
+            <div class="auth-brand-icon">
+                {{ icon('logo', 28) }}
+            </div>
             <h2 class="auth-title">Create Your Account</h2>
-            <p class="auth-subtitle">Register for the Smart Inventory & Analytics System</p>
+            <p class="auth-subtitle">Register for the Smart Inventory &amp; Analytics System</p>
         </div>
 
         <!-- Role Security Policy Notice -->
-        <div class="role-policy-notice">
-            <span>🛡️</span>
-            <div>
-                <strong>Role-Based Registration:</strong> Select your role (<strong>Store Associate</strong>, <strong>Data Analyst</strong>, or <strong>Inventory Manager</strong>) for this demo. System Administrator accounts are restricted to pre-provisioned administrative governance.
+        <div class="alert alert-info" style="margin-bottom: 20px;">
+            <span class="alert-icon">{{ icon('shield', 18) }}</span>
+            <div class="alert-content" style="font-size: 0.8rem; line-height: 1.45;">
+                <strong>Role-Based Registration:</strong> Select your operational role (<strong>Store Associate</strong>, <strong>Data Analyst</strong>, or <strong>Inventory Manager</strong>) for this demo. System Administrator accounts are restricted to pre-provisioned administrative governance.
             </div>
         </div>
 
@@ -35,7 +37,7 @@
                     Full Name <span class="required">*</span>
                 </label>
                 <div class="input-with-icon">
-                    <span class="input-icon">👤</span>
+                    <span class="input-icon">{{ icon('user', 16) }}</span>
                     <input 
                         type="text" 
                         id="name" 
@@ -57,7 +59,7 @@
                     Work Email <span class="required">*</span>
                 </label>
                 <div class="input-with-icon">
-                    <span class="input-icon">✉️</span>
+                    <span class="input-icon">{{ icon('mail', 16) }}</span>
                     <input 
                         type="email" 
                         id="email" 
@@ -71,24 +73,24 @@
                         oninput="validateEmailField()"
                     >
                 </div>
-                <div id="emailFeedback" style="font-size:0.75rem; margin-top:3px; display:none;"></div>
+                <div id="emailFeedback" class="form-feedback" style="display:none;"></div>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="role">
-                    Role <span class="required">*</span>
+                    Operational Role <span class="required">*</span>
                 </label>
                 <div class="input-with-icon">
-                    <span class="input-icon">💼</span>
+                    <span class="input-icon">{{ icon('shield', 16) }}</span>
                     <select id="role" name="role" class="form-control" required style="cursor:pointer; appearance: auto;">
                         <option value="Store Associate" {% if role == 'Store Associate' %}selected{% endif %}>Store Associate</option>
                         <option value="Data Analyst" {% if role == 'Data Analyst' %}selected{% endif %}>Data Analyst</option>
                         <option value="Inventory Manager" {% if not role or role == 'Inventory Manager' %}selected{% endif %}>Inventory Manager</option>
                     </select>
                 </div>
-                <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">
+                <span class="form-help">
                     Select the role to experience role-specific navigation, permissions, and dashboards.
-                </div>
+                </span>
             </div>
 
             <div class="form-group">
@@ -96,7 +98,7 @@
                     Password <span class="required">*</span>
                 </label>
                 <div class="input-with-icon">
-                    <span class="input-icon">🔒</span>
+                    <span class="input-icon">{{ icon('lock', 16) }}</span>
                     <input 
                         type="password" 
                         id="password" 
@@ -104,22 +106,24 @@
                         class="form-control" 
                         placeholder="At least 8 characters" 
                         minlength="8"
+                        maxlength="128"
                         autocomplete="new-password"
                         required
                         oninput="checkPasswordStrength()"
                     >
-                    <button type="button" class="password-toggle" onclick="togglePassword('password', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
-                        👁️
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
+                        {{ icon('eye', 16) }}
                     </button>
                 </div>
+
                 <!-- Password Strength Meter -->
-                <div class="password-strength-container" style="margin-top:6px;">
+                <div class="password-strength-container">
                     <div class="strength-bar-track">
                         <div class="strength-bar-fill" id="strengthFill"></div>
                     </div>
                     <div class="strength-label-row">
-                        <span style="font-size:0.75rem; color:#64748b;">Strength:</span>
-                        <span id="strengthText" style="font-size:0.75rem; font-weight:600; color:#94a3b8;">None</span>
+                        <span class="strength-label-prefix">Strength:</span>
+                        <span id="strengthText" class="strength-label-val">None</span>
                     </div>
                 </div>
             </div>
@@ -129,7 +133,7 @@
                     Confirm Password <span class="required">*</span>
                 </label>
                 <div class="input-with-icon">
-                    <span class="input-icon">🔑</span>
+                    <span class="input-icon">{{ icon('lock', 16) }}</span>
                     <input 
                         type="password" 
                         id="confirm_password" 
@@ -137,26 +141,36 @@
                         class="form-control" 
                         placeholder="Re-type your password" 
                         minlength="8"
+                        maxlength="128"
                         autocomplete="new-password"
                         required
                         oninput="checkPasswordMatch()"
                     >
-                    <button type="button" class="password-toggle" onclick="togglePassword('confirm_password', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
-                        👁️
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('confirm_password', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
+                        {{ icon('eye', 16) }}
                     </button>
                 </div>
-                <div id="matchFeedback" style="font-size:0.75rem; margin-top:3px; display:none;"></div>
+                <div id="matchFeedback" class="form-feedback" style="display:none;"></div>
             </div>
 
-            <!-- Policy Checklist -->
+            <!-- Password Requirements Checklist -->
             <div class="password-checklist">
-                <div class="check-item" id="checkLen"><span>○</span> Minimum 8 characters</div>
-                <div class="check-item" id="checkChar"><span>○</span> Contains letters and numbers or symbols</div>
-                <div class="check-item" id="checkMatch"><span>○</span> Passwords match</div>
+                <div class="check-item" id="checkLen">
+                    <span class="check-indicator">&bull;</span>
+                    <span>Minimum 8 characters</span>
+                </div>
+                <div class="check-item" id="checkChar">
+                    <span class="check-indicator">&bull;</span>
+                    <span>Contains letters and numbers or symbols</span>
+                </div>
+                <div class="check-item" id="checkMatch">
+                    <span class="check-indicator">&bull;</span>
+                    <span>Passwords match</span>
+                </div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitBtn">
-                <span>Create Account & Sign In &rarr;</span>
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitBtn" style="margin-top: 20px;">
+                <span>Create Account &rarr;</span>
             </button>
         </form>
 
@@ -167,198 +181,17 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<style>
-.auth-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 30px 16px 60px 16px;
-    min-height: calc(100vh - 180px);
-}
-
-.auth-card {
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-xl);
-    padding: 36px 32px;
-    width: 100%;
-    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-}
-
-.auth-header {
-    text-align: center;
-    margin-bottom: 18px;
-}
-
-.auth-brand-icon {
-    font-size: 2.2rem;
-    margin-bottom: 8px;
-    display: inline-block;
-}
-
-.auth-title {
-    font-size: 1.45rem;
-    font-weight: 700;
-    color: var(--text-main);
-    margin: 0 0 6px 0;
-}
-
-.auth-subtitle {
-    font-size: 0.88rem;
-    color: var(--text-muted);
-    margin: 0;
-}
-
-.role-policy-notice {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: var(--radius-md);
-    padding: 10px 12px;
-    margin-bottom: 20px;
-    font-size: 0.78rem;
-    color: #475569;
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-    line-height: 1.35;
-}
-
-.role-policy-notice strong {
-    color: #1e293b;
-}
-
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.input-with-icon {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input-icon {
-    position: absolute;
-    left: 12px;
-    font-size: 1rem;
-    pointer-events: none;
-    color: var(--text-light);
-}
-
-.input-with-icon .form-control {
-    padding-left: 38px;
-    padding-right: 40px;
-}
-
-.password-toggle {
-    position: absolute;
-    right: 10px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.05rem;
-    color: var(--text-muted);
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.7;
-    transition: opacity 0.15s;
-}
-
-.password-toggle:hover {
-    opacity: 1;
-}
-
-/* Password Strength Meter */
-.strength-bar-track {
-    width: 100%;
-    height: 4px;
-    background: #e2e8f0;
-    border-radius: 9999px;
-    overflow: hidden;
-}
-
-.strength-bar-fill {
-    width: 0%;
-    height: 100%;
-    transition: width 0.25s ease, background-color 0.25s ease;
-}
-
-.strength-label-row {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 3px;
-}
-
-.password-checklist {
-    background: #f8fafc;
-    border-radius: var(--radius-sm);
-    padding: 8px 12px;
-    font-size: 0.75rem;
-    color: #64748b;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.check-item.valid {
-    color: #10b981;
-    font-weight: 500;
-}
-
-.check-item.valid span {
-    color: #10b981;
-}
-
-.btn-block {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.btn-lg {
-    padding: 12px 18px;
-    font-size: 0.95rem;
-    font-weight: 600;
-}
-
-.auth-footer {
-    margin-top: 24px;
-    padding-top: 18px;
-    border-top: 1px solid var(--border-subtle);
-    text-align: center;
-    font-size: 0.86rem;
-    color: var(--text-muted);
-}
-
-.auth-link {
-    color: var(--brand-primary);
-    font-weight: 600;
-    text-decoration: none;
-    margin-left: 4px;
-}
-
-.auth-link:hover {
-    text-decoration: underline;
-    color: var(--brand-hover);
-}
-</style>
-
+{% block extra_scripts %}
 <script>
-function togglePassword(inputId, btn) {
+function togglePasswordVisibility(inputId, btn) {
     const input = document.getElementById(inputId);
     if (!input) return;
     if (input.type === 'password') {
         input.type = 'text';
-        btn.textContent = '🙈';
     } else {
         input.type = 'password';
-        btn.textContent = '👁️';
     }
 }
 
@@ -374,23 +207,22 @@ function checkPasswordStrength() {
     const hasLetter = /[a-zA-Z]/.test(pw);
     const hasNumOrSym = /[0-9!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(pw);
 
-    // Checklist updates
     if (hasLen) {
         checkLen.classList.add('valid');
-        checkLen.querySelector('span').textContent = '✓';
+        checkLen.querySelector('.check-indicator').textContent = '✓';
         score += 1;
     } else {
         checkLen.classList.remove('valid');
-        checkLen.querySelector('span').textContent = '○';
+        checkLen.querySelector('.check-indicator').textContent = '•';
     }
 
     if (hasLetter && hasNumOrSym) {
         checkChar.classList.add('valid');
-        checkChar.querySelector('span').textContent = '✓';
+        checkChar.querySelector('.check-indicator').textContent = '✓';
         score += 1;
     } else {
         checkChar.classList.remove('valid');
-        checkChar.querySelector('span').textContent = '○';
+        checkChar.querySelector('.check-indicator').textContent = '•';
     }
 
     if (pw.length >= 12) score += 1;
@@ -400,27 +232,27 @@ function checkPasswordStrength() {
         fill.style.width = '0%';
         fill.style.backgroundColor = '';
         text.textContent = 'None';
-        text.style.color = '#94a3b8';
+        text.style.color = 'var(--text-light)';
     } else if (score <= 1) {
         fill.style.width = '25%';
-        fill.style.backgroundColor = '#ef4444';
+        fill.style.backgroundColor = 'var(--danger)';
         text.textContent = 'Weak';
-        text.style.color = '#ef4444';
+        text.style.color = 'var(--danger)';
     } else if (score === 2) {
         fill.style.width = '50%';
-        fill.style.backgroundColor = '#f59e0b';
+        fill.style.backgroundColor = 'var(--warning)';
         text.textContent = 'Fair';
-        text.style.color = '#f59e0b';
+        text.style.color = 'var(--warning)';
     } else if (score === 3) {
         fill.style.width = '75%';
-        fill.style.backgroundColor = '#0284c7';
+        fill.style.backgroundColor = 'var(--info)';
         text.textContent = 'Good';
-        text.style.color = '#0284c7';
+        text.style.color = 'var(--info)';
     } else {
         fill.style.width = '100%';
-        fill.style.backgroundColor = '#10b981';
+        fill.style.backgroundColor = 'var(--success)';
         text.textContent = 'Strong';
-        text.style.color = '#10b981';
+        text.style.color = 'var(--success)';
     }
 
     checkPasswordMatch();
@@ -435,21 +267,21 @@ function checkPasswordMatch() {
     if (!confirm) {
         feedback.style.display = 'none';
         checkMatch.classList.remove('valid');
-        checkMatch.querySelector('span').textContent = '○';
+        checkMatch.querySelector('.check-indicator').textContent = '•';
         return;
     }
 
     feedback.style.display = 'block';
     if (pw === confirm) {
         feedback.textContent = '✓ Passwords match';
-        feedback.style.color = '#10b981';
+        feedback.className = 'form-feedback valid';
         checkMatch.classList.add('valid');
-        checkMatch.querySelector('span').textContent = '✓';
+        checkMatch.querySelector('.check-indicator').textContent = '✓';
     } else {
         feedback.textContent = '✗ Passwords do not match';
-        feedback.style.color = '#ef4444';
+        feedback.className = 'form-feedback invalid';
         checkMatch.classList.remove('valid');
-        checkMatch.querySelector('span').textContent = '○';
+        checkMatch.querySelector('.check-indicator').textContent = '•';
     }
 }
 
@@ -462,17 +294,16 @@ function validateEmailField() {
         feedback.style.display = 'none';
         return false;
     }
-    // Require user@domain.tld structure with exactly one @ and no spaces
     const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email) || email.includes(' ') || (email.match(/@/g) || []).length !== 1) {
         feedback.style.display = 'block';
         feedback.textContent = '✗ Invalid email format (must be user@domain.com, no spaces)';
-        feedback.style.color = '#ef4444';
+        feedback.className = 'form-feedback invalid';
         return false;
     } else {
         feedback.style.display = 'block';
         feedback.textContent = '✓ Valid email format';
-        feedback.style.color = '#10b981';
+        feedback.className = 'form-feedback valid';
         return true;
     }
 }

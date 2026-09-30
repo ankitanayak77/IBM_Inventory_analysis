@@ -2,51 +2,37 @@
 
 {% block title %}My Profile{% endblock %}
 {% block breadcrumb %}
-<a href="{{ url_for('dashboard') }}" style="color:inherit; text-decoration:none;">Dashboard</a>
-<span>/</span>
+<span class="breadcrumb-space">Account</span>
+<span class="breadcrumb-separator">/</span>
 <span class="breadcrumb-active">My Profile</span>
 {% endblock %}
 
 {% block content %}
+<!-- Page Header with Primary Actions -->
 <div class="page-header">
     <div>
         <h2 class="page-header-title">My Profile &amp; Account Information</h2>
-        <p class="page-header-subtitle">View account credentials, personal information, and operational role authorizations</p>
+        <p class="page-header-subtitle">Manage account credentials, personal contact identity, and operational role authorizations</p>
     </div>
-    <div style="display:flex; gap:10px; align-items:center;">
+    <div class="page-header-actions">
         <a href="{{ url_for('edit_profile') }}" class="btn btn-primary btn-sm">
-            <span>✏️</span> Edit Profile
+            <span class="btn-icon">{{ icon('edit', 14) }}</span>
+            <span>Edit Profile</span>
         </a>
         <a href="{{ url_for('change_password') }}" class="btn btn-outline btn-sm">
-            <span>🔑</span> Change Password
+            <span class="btn-icon">{{ icon('key', 14) }}</span>
+            <span>Change Password</span>
         </a>
-        {% if user.role == 'Administrator' %}
-        <a href="{{ url_for('admin_users') }}" class="btn btn-outline btn-sm" style="background:#eef2ff; border-color:#c7d2fe; color:#4338ca;">
-            <span>🛡️</span> Manage Users
+        {% if user.role in ['Administrator', 'System Administrator'] %}
+        <a href="{{ url_for('admin_users') }}" class="btn btn-outline btn-sm">
+            <span class="btn-icon">{{ icon('admin', 14) }}</span>
+            <span>Manage Users</span>
         </a>
         {% endif %}
     </div>
 </div>
 
-<!-- Profile Navigation Tabs -->
-<div class="profile-tabs-nav">
-    <a href="{{ url_for('profile') }}" class="profile-tab-btn active">
-        <span>👤</span> Overview
-    </a>
-    <a href="{{ url_for('edit_profile') }}" class="profile-tab-btn">
-        <span>✏️</span> Edit Profile
-    </a>
-    <a href="{{ url_for('change_password') }}" class="profile-tab-btn">
-        <span>🔑</span> Change Password
-    </a>
-    {% if user.role == 'Administrator' %}
-    <a href="{{ url_for('admin_users') }}" class="profile-tab-btn">
-        <span>🛡️</span> User Governance
-    </a>
-    {% endif %}
-</div>
-
-<!-- Profile Hero Card -->
+<!-- Identity Summary Banner -->
 <div class="profile-hero-card">
     <div class="profile-hero-avatar">
         {{ user_initials or user.name[:2].upper() }}
@@ -56,29 +42,30 @@
             <h3 class="profile-hero-name">{{ user.name }}</h3>
             <span class="role-badge role-badge-{{ user.role|lower|replace(' ', '-') }}">{{ user.role }}</span>
             <span class="status-pill status-pill-active">
-                <span class="status-dot"></span> Active Account
+                <span class="status-dot"></span>
+                <span>Active Account</span>
             </span>
         </div>
         <div class="profile-hero-meta">
-            <span>✉️ {{ user.email }}</span>
-            <span>&bull;</span>
-            <span class="font-mono">User ID: #{{ user.user_id }}</span>
-            <span>&bull;</span>
-            <span>Joined: {{ user.created_at[:10] if user.created_at else 'Active' }}</span>
+            <span class="hero-meta-item">{{ icon('mail', 14) }} {{ user.email }}</span>
+            <span class="hero-meta-divider">&bull;</span>
+            <span class="hero-meta-item font-mono">User ID: #{{ user.user_id }}</span>
+            <span class="hero-meta-divider">&bull;</span>
+            <span class="hero-meta-item">Joined: {{ user.created_at[:10] if user.created_at else 'Active' }}</span>
         </div>
     </div>
 </div>
 
 <!-- Details Grid -->
 <div class="profile-grid">
-    <!-- Account Information (Read-Only) -->
+    <!-- Account Details & Governance (System Enforced) -->
     <div class="panel-card">
         <div class="panel-header">
             <div>
-                <div class="panel-title">Account Governance &amp; Security</div>
-                <div class="panel-subtitle">System attributes managed under server-side RBAC policies</div>
+                <h4 class="panel-title">Account Governance &amp; Details</h4>
+                <p class="panel-subtitle">System attributes managed under server-side RBAC policies</p>
             </div>
-            <span class="header-tag" style="font-size:0.72rem;">🔒 System Enforced</span>
+            <span class="header-tag" style="font-size:0.72rem;">System Enforced</span>
         </div>
 
         <div class="profile-info-list">
@@ -88,28 +75,28 @@
             </div>
             <div class="profile-info-row">
                 <span class="profile-info-label">Operational Role</span>
-                <span class="profile-info-value">
+                <div class="profile-info-value">
                     <span class="role-badge role-badge-{{ user.role|lower|replace(' ', '-') }}">{{ user.role }}</span>
-                    <span style="display:block; font-size:0.75rem; color:#64748b; margin-top:4px;">
-                        {% if user.role == 'Administrator' %}
-                        Full administrative access, user lifecycle management, role governance.
+                    <span class="profile-field-desc">
+                        {% if user.role in ['Administrator', 'System Administrator'] %}
+                        Full administrative access, user lifecycle management, and role governance.
                         {% elif user.role == 'Inventory Manager' %}
-                        Product catalog, inbound restocks, physical inventory, analytics, reports.
+                        Product catalog, inbound restocks, physical inventory, analytics, and reports.
                         {% elif user.role == 'Data Analyst' %}
-                        Executive dashboard, product velocity analytics, recommendation engine, BI exports.
+                        Executive dashboard, product velocity analytics, recommendation engine, and BI exports.
                         {% else %}
                         Store checkout sales transactions and physical inventory stock lookups.
                         {% endif %}
                     </span>
-                </span>
+                </div>
             </div>
             <div class="profile-info-row">
                 <span class="profile-info-label">Account Status</span>
                 <span class="profile-info-value">
                     {% if user.is_active == 1 %}
-                    <span style="color:#10b981; font-weight:600;">● Active</span> (Sign-in enabled)
+                    <span class="status-indicator-inline active"><span class="status-dot"></span> Active</span> (Sign-in enabled)
                     {% else %}
-                    <span style="color:#ef4444; font-weight:600;">● Inactive</span>
+                    <span class="status-indicator-inline inactive"><span class="status-dot"></span> Inactive</span>
                     {% endif %}
                 </span>
             </div>
@@ -126,12 +113,12 @@
         </div>
     </div>
 
-    <!-- Personal Information & Quick Actions -->
+    <!-- Personal Information & Credentials Overview -->
     <div class="panel-card">
         <div class="panel-header">
             <div>
-                <div class="panel-title">Personal Credentials</div>
-                <div class="panel-subtitle">Editable profile information and authentication settings</div>
+                <h4 class="panel-title">Personal Credentials</h4>
+                <p class="panel-subtitle">Profile attributes and authentication security</p>
             </div>
         </div>
 
@@ -142,216 +129,50 @@
             </div>
             <div class="profile-info-row">
                 <span class="profile-info-label">Email Address</span>
-                <span class="profile-info-value">
+                <div class="profile-info-value">
                     <span class="font-bold">{{ user.email }}</span>
-                    <span style="display:block; font-size:0.72rem; color:#64748b; margin-top:2px;">
+                    <span class="profile-field-desc">
                         Unique sign-in identity across system operations
                     </span>
-                </span>
+                </div>
             </div>
             <div class="profile-info-row">
                 <span class="profile-info-label">Password</span>
-                <span class="profile-info-value">
-                    <span>••••••••••••••••</span>
-                    <span style="display:block; font-size:0.72rem; color:#64748b; margin-top:2px;">
+                <div class="profile-info-value">
+                    <span class="font-mono">••••••••••••••••</span>
+                    <span class="profile-field-desc">
                         Protected with Werkzeug scrypt key-derivation algorithm
                     </span>
+                </div>
+            </div>
+            <div class="profile-info-row">
+                <span class="profile-info-label">Failed Logins</span>
+                <span class="profile-info-value font-mono">
+                    {{ user.failed_login_attempts|default(0) }} attempts (Locked after 5)
                 </span>
             </div>
-        </div>
-
-        <div style="padding: 16px 20px; background: #f8fafc; border-top: 1px solid var(--border-color); display: flex; gap: 10px; justify-content: flex-end;">
-            <a href="{{ url_for('edit_profile') }}" class="btn btn-primary btn-sm">
-                <span>✏️</span> Edit Name / Email
-            </a>
-            <a href="{{ url_for('change_password') }}" class="btn btn-outline btn-sm">
-                <span>🔑</span> Change Password
-            </a>
         </div>
     </div>
 </div>
 
-<!-- Security Architecture Notice -->
+<!-- Security & Privacy Architecture Notice -->
 <div class="panel-card" style="margin-top: 20px;">
     <div class="panel-header">
         <div>
-            <div class="panel-title">Security &amp; Privacy Summary</div>
-            <div class="panel-subtitle">Local portfolio authentication policies and boundaries</div>
+            <h4 class="panel-title">Security &amp; Privacy Summary</h4>
+            <p class="panel-subtitle">Portfolio authentication policies and boundary guarantees</p>
         </div>
     </div>
-    <div style="padding: 16px 20px; font-size: 0.85rem; color: #475569; line-height: 1.6;">
-        <p style="margin: 0 0 8px 0;">
+    <div class="panel-body text-secondary" style="font-size: 0.85rem; line-height: 1.6;">
+        <p style="margin-bottom: 8px;">
             <strong>Role-Based Access Control:</strong> User operational roles are verified server-side on every request via cryptographic sessions and route guards. Users cannot elevate their own permissions or modify another user's identity.
         </p>
-        <p style="margin: 0 0 8px 0;">
+        <p style="margin-bottom: 8px;">
             <strong>Email Identity:</strong> Email addresses function as unique account usernames within this system. In this local deployment, account credentials are stored in SQLite and do not transmit outbound email.
         </p>
-        <p style="margin: 0;">
+        <p style="margin-bottom: 0;">
             <strong>Password Storage:</strong> All passwords are encrypted using scrypt with random salt generation. Plaintext passwords are never logged, flashed, or stored in plaintext.
         </p>
     </div>
 </div>
-
-<style>
-.profile-tabs-nav {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
-}
-.profile-tab-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: var(--radius-md);
-    font-size: 0.84rem;
-    font-weight: 600;
-    color: #475569;
-    text-decoration: none;
-    transition: all 0.15s ease;
-    background: transparent;
-}
-.profile-tab-btn:hover {
-    background: #f1f5f9;
-    color: var(--text-main);
-}
-.profile-tab-btn.active {
-    background: var(--brand-primary);
-    color: #ffffff;
-}
-.profile-hero-card {
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: 24px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 24px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-.profile-hero-avatar {
-    width: 68px;
-    height: 68px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    color: #ffffff;
-    font-size: 1.5rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    letter-spacing: 0.05em;
-    flex-shrink: 0;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-.profile-hero-info {
-    flex: 1;
-}
-.profile-hero-name-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 6px;
-}
-.profile-hero-name {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: var(--text-main);
-    margin: 0;
-}
-.profile-hero-meta {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.85rem;
-    color: #64748b;
-    flex-wrap: wrap;
-}
-.profile-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-@media (max-width: 900px) {
-    .profile-grid {
-        grid-template-columns: 1fr;
-    }
-}
-.profile-info-list {
-    padding: 4px 20px;
-}
-.profile-info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 14px 0;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 0.86rem;
-}
-.profile-info-row:last-child {
-    border-bottom: none;
-}
-.profile-info-label {
-    color: #64748b;
-    font-weight: 500;
-    width: 140px;
-    flex-shrink: 0;
-}
-.profile-info-value {
-    color: var(--text-main);
-    flex: 1;
-    text-align: right;
-}
-.role-badge {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 9999px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-.role-badge-administrator {
-    background: #e0e7ff;
-    color: #3730a3;
-    border: 1px solid #c7d2fe;
-}
-.role-badge-inventory-manager {
-    background: #fef3c7;
-    color: #92400e;
-    border: 1px solid #fde68a;
-}
-.role-badge-data-analyst {
-    background: #e0f2fe;
-    color: #0369a1;
-    border: 1px solid #bae6fd;
-}
-.role-badge-store-associate {
-    background: #f1f5f9;
-    color: #475569;
-    border: 1px solid #cbd5e1;
-}
-.status-pill-active {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #10b981;
-    background: #ecfdf5;
-    padding: 2px 8px;
-    border-radius: 9999px;
-    border: 1px solid #a7f3d0;
-}
-.status-pill-active .status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #10b981;
-}
-</style>
 {% endblock %}

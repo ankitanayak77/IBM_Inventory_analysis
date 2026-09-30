@@ -2,232 +2,146 @@
 
 {% block title %}Edit Profile{% endblock %}
 {% block breadcrumb %}
-<a href="{{ url_for('dashboard') }}" style="color:inherit; text-decoration:none;">Dashboard</a>
-<span>/</span>
-<a href="{{ url_for('profile') }}" style="color:inherit; text-decoration:none;">My Profile</a>
-<span>/</span>
+<span class="breadcrumb-space">Account</span>
+<span class="breadcrumb-separator">/</span>
+<a href="{{ url_for('profile') }}" class="breadcrumb-link">My Profile</a>
+<span class="breadcrumb-separator">/</span>
 <span class="breadcrumb-active">Edit</span>
 {% endblock %}
 
 {% block content %}
-<div class="page-header" style="max-width: 760px; margin: 0 auto 20px auto;">
-    <div>
-        <h2 class="page-header-title">Edit My Profile</h2>
-        <p class="page-header-subtitle">Update your personal account information and sign-in email</p>
+<div class="form-container">
+    <div class="page-header">
+        <div>
+            <h2 class="page-header-title">Edit My Profile</h2>
+            <p class="page-header-subtitle">Update your personal account display name and sign-in email address</p>
+        </div>
+        <div>
+            <a href="{{ url_for('profile') }}" class="btn btn-outline btn-sm">
+                &larr; Back to Profile
+            </a>
+        </div>
     </div>
-    <div>
-        <a href="{{ url_for('profile') }}" class="btn btn-outline">&larr; Back to Profile</a>
-    </div>
-</div>
 
-<!-- Profile Navigation Tabs -->
-<div class="profile-tabs-nav" style="max-width: 760px; margin: 0 auto 20px auto;">
-    <a href="{{ url_for('profile') }}" class="profile-tab-btn">
-        <span>👤</span> Overview
-    </a>
-    <a href="{{ url_for('edit_profile') }}" class="profile-tab-btn active">
-        <span>✏️</span> Edit Profile
-    </a>
-    <a href="{{ url_for('change_password') }}" class="profile-tab-btn">
-        <span>🔑</span> Change Password
-    </a>
-</div>
+    <div class="form-card">
+        <form method="POST" action="{{ url_for('edit_profile') }}" id="editProfileForm">
+            <!-- CSRF Protection Token -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-<div class="form-card" style="max-width: 760px; margin: 0 auto;">
-    <form method="POST" action="{{ url_for('edit_profile') }}" id="editProfileForm">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-        <!-- Immutable Governance Fields Notice -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:14px 16px; margin-bottom:20px;">
-            <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#64748b; margin-bottom:8px; letter-spacing:0.04em;">
-                🔒 Account System Metadata (Read-Only)
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; font-size:0.82rem;">
-                <div>
-                    <span style="color:#64748b;">User ID:</span>
-                    <strong class="font-mono">#{{ user.user_id }}</strong>
+            <!-- Immutable System Metadata Banner -->
+            <div class="metadata-banner">
+                <div class="metadata-banner-title">
+                    <span class="banner-icon">{{ icon('shield', 14) }}</span>
+                    <span>Account Metadata (Read-Only)</span>
                 </div>
-                <div>
-                    <span style="color:#64748b;">Role:</span>
-                    <strong class="role-badge role-badge-{{ user.role|lower|replace(' ', '-') }}">{{ user.role }}</strong>
+                <div class="metadata-banner-grid">
+                    <div>
+                        <span class="meta-label">User ID:</span>
+                        <strong class="font-mono">#{{ user.user_id }}</strong>
+                    </div>
+                    <div>
+                        <span class="meta-label">Role:</span>
+                        <strong class="role-badge role-badge-{{ user.role|lower|replace(' ', '-') }}">{{ user.role }}</strong>
+                    </div>
+                    <div>
+                        <span class="meta-label">Status:</span>
+                        <strong class="text-success"><span class="status-dot"></span> Active</strong>
+                    </div>
                 </div>
-                <div>
-                    <span style="color:#64748b;">Status:</span>
-                    <strong style="color:#10b981;">● Active</strong>
+                <div class="metadata-banner-hint">
+                    * Operational roles and permissions are strictly managed by System Administrators.
                 </div>
             </div>
-            <div style="font-size:0.72rem; color:#94a3b8; margin-top:8px;">
-                * Operational roles and permissions are strictly managed by System Administrators.
-            </div>
-        </div>
 
-        <!-- Editable: Full Name -->
-        <div class="form-group">
-            <label class="form-label" for="name">
-                Full Name <span class="required">*</span>
-            </label>
-            <div class="input-with-icon">
-                <span class="input-icon">👤</span>
-                <input 
-                    type="text" 
-                    id="name" 
-                    name="name" 
-                    class="form-control" 
-                    value="{{ user.name }}" 
-                    required 
-                    minlength="2" 
-                    maxlength="60"
-                    placeholder="e.g. Ankit Kumar"
-                >
+            <!-- Editable: Full Name -->
+            <div class="form-group">
+                <label class="form-label" for="name">
+                    Full Name <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                    <span class="input-icon">{{ icon('user', 16) }}</span>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        name="name" 
+                        class="form-control" 
+                        value="{{ user.name }}" 
+                        required 
+                        minlength="2" 
+                        maxlength="60"
+                        placeholder="e.g. Alex Morgan"
+                    >
+                </div>
+                <span class="form-help">Displayed across system navigation, audit records, and operational logs (2–60 characters).</span>
             </div>
-            <span class="form-help">Displayed across system navigation, orders, and audits (2–60 characters).</span>
-        </div>
 
-        <!-- Editable: Email Address -->
-        <div class="form-group">
-            <label class="form-label" for="email">
-                Work Email Address <span class="required">*</span>
-            </label>
-            <div class="input-with-icon">
-                <span class="input-icon">✉️</span>
-                <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    class="form-control" 
-                    value="{{ user.email }}" 
-                    required 
-                    maxlength="120"
-                    placeholder="user@inventory.com"
-                >
+            <!-- Editable: Email Address -->
+            <div class="form-group">
+                <label class="form-label" for="email">
+                    Work Email Address <span class="required">*</span>
+                </label>
+                <div class="input-with-icon">
+                    <span class="input-icon">{{ icon('mail', 16) }}</span>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        class="form-control" 
+                        value="{{ user.email }}" 
+                        required 
+                        maxlength="120"
+                        placeholder="user@inventory.com"
+                    >
+                </div>
+                <span class="form-help">Unique login identity across all application sessions.</span>
             </div>
-            <span class="form-help">Unique login identity across all application sessions.</span>
-        </div>
 
-        <!-- Current Password Confirmation (Required when changing email) -->
-        <div class="form-group" style="background:#fef2f2; border:1px solid #fecaca; border-radius:var(--radius-md); padding:16px; margin-top:20px;">
-            <label class="form-label" for="current_password" style="color:#991b1b;">
-                Current Password <span style="font-size:0.75rem; font-weight:normal; color:#b91c1c;">(Required ONLY if changing email)</span>
-            </label>
-            <div class="input-with-icon">
-                <span class="input-icon">🔒</span>
-                <input 
-                    type="password" 
-                    id="current_password" 
-                    name="current_password" 
-                    class="form-control" 
-                    placeholder="Enter current password to verify identity"
-                    autocomplete="current-password"
-                >
-                <button type="button" class="password-toggle" onclick="togglePassword('current_password', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
-                    👁️
+            <!-- Current Password Confirmation (Required only when changing email) -->
+            <div class="password-confirmation-box">
+                <label class="form-label" for="current_password">
+                    Current Password <span class="sub-label">(Required ONLY if changing email address)</span>
+                </label>
+                <div class="input-with-icon">
+                    <span class="input-icon">{{ icon('lock', 16) }}</span>
+                    <input 
+                        type="password" 
+                        id="current_password" 
+                        name="current_password" 
+                        class="form-control" 
+                        placeholder="Enter current password to verify identity"
+                        autocomplete="current-password"
+                    >
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('current_password', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
+                        {{ icon('eye', 16) }}
+                    </button>
+                </div>
+                <span class="form-help">
+                    Security Policy: Modifying your sign-in email requires current password authorization to prevent unauthorized email re-binding.
+                </span>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('profile') }}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary" id="saveProfileBtn">
+                    <span>Save Changes</span>
                 </button>
             </div>
-            <span class="form-help" style="color:#b91c1c;">
-                Security Policy: Modifying your sign-in email requires current password authorization to prevent unauthorized email re-binding.
-            </span>
-        </div>
-
-        <!-- Local Identity Notice -->
-        <div style="font-size:0.78rem; color:#64748b; background:#f8fafc; border-left:3px solid var(--brand-primary); padding:10px 14px; margin: 20px 0;">
-            <strong>Local Identity Scope:</strong> This application operates in a local environment. Updating your email changes your local sign-in identifier immediately without sending external verification emails.
-        </div>
-
-        <div class="form-actions">
-            <a href="{{ url_for('profile') }}" class="btn btn-outline">Cancel</a>
-            <button type="submit" class="btn btn-primary" id="saveProfileBtn">
-                <span>💾</span> Save Changes
-            </button>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
+{% endblock %}
 
-<style>
-.profile-tabs-nav {
-    display: flex;
-    gap: 8px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
-}
-.profile-tab-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: var(--radius-md);
-    font-size: 0.84rem;
-    font-weight: 600;
-    color: #475569;
-    text-decoration: none;
-    transition: all 0.15s ease;
-}
-.profile-tab-btn:hover {
-    background: #f1f5f9;
-    color: var(--text-main);
-}
-.profile-tab-btn.active {
-    background: var(--brand-primary);
-    color: #ffffff;
-}
-.input-with-icon {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-.input-icon {
-    position: absolute;
-    left: 12px;
-    font-size: 0.95rem;
-    color: #94a3b8;
-    pointer-events: none;
-    z-index: 1;
-}
-.input-with-icon .form-control {
-    padding-left: 38px;
-    padding-right: 40px;
-    width: 100%;
-}
-.password-toggle {
-    position: absolute;
-    right: 10px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    padding: 4px;
-    color: #94a3b8;
-    border-radius: var(--radius-sm);
-    transition: color 0.15s ease;
-}
-.password-toggle:hover {
-    color: var(--text-main);
-}
-.role-badge {
-    display: inline-block;
-    padding: 2px 7px;
-    border-radius: 9999px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-.role-badge-administrator { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
-.role-badge-inventory-manager { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-.role-badge-data-analyst { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-.role-badge-store-associate { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
-</style>
-
+{% block extra_scripts %}
 <script>
-function togglePassword(inputId, btn) {
+function togglePasswordVisibility(inputId, btn) {
     const input = document.getElementById(inputId);
-    if (input) {
-        if (input.type === 'password') {
-            input.type = 'text';
-            btn.textContent = '🙈';
-        } else {
-            input.type = 'password';
-            btn.textContent = '👁️';
-        }
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.setAttribute('aria-label', 'Hide password');
+    } else {
+        input.type = 'password';
+        btn.setAttribute('aria-label', 'Show password');
     }
 }
 </script>

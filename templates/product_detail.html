@@ -26,7 +26,7 @@
     <div style="display:flex; gap:10px;">
         <a href="{{ url_for('products') }}" class="btn btn-outline">&larr; Back to Catalog</a>
         <a href="{{ url_for('edit_product', product_id=product.product_id) }}" class="btn btn-outline">
-            <span>✏️</span> Edit Product
+            Edit Product
         </a>
         {% if product.active == 1 %}
         <form method="POST" action="{{ url_for('deactivate_product', product_id=product.product_id) }}" onsubmit="return confirm('Deactivate {{ product.product_name }}? Historical sales and inventory records will remain preserved.');">
@@ -89,7 +89,7 @@
 <div class="panel-card" style="margin-bottom: 24px; border-left: 4px solid {% if recommendation.priority == 'HIGH' %}#ef4444{% elif recommendation.priority == 'MEDIUM' %}#f59e0b{% elif recommendation.priority == 'LOW' %}#10b981{% else %}#6366f1{% endif %};">
     <div class="panel-header" style="margin-bottom: 12px; padding-bottom: 8px;">
         <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:1.2rem;">💡</span>
+            <span style="font-size:1.2rem;"></span>
             <div>
                 <h3 class="panel-title" style="font-size:1rem;">Inventory Recommendation</h3>
                 <p class="panel-subtitle">Rule-based decision support signal based on velocity and stock coverage</p>

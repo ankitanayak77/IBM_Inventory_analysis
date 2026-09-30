@@ -29,6 +29,16 @@ from services import report_service
 
 EXPORT_DIR = BASE_DIR / "exports" / "powerbi"
 
+def safe_write(path, content):
+    import time
+    for attempt in range(5):
+        try:
+            path.write_text(content, encoding="utf-8")
+            return
+        except OSError:
+            time.sleep(0.15)
+    path.write_text(content, encoding="utf-8")
+
 def export_all():
     print("=" * 68)
     print("STARTING ANALYTICAL DATASET EXPORT: NORMALIZED POWER BI CSV PIPELINE")
@@ -45,7 +55,7 @@ def export_all():
         sales_fields = ["sale_date", "units_sold", "transaction_count", "calculated_revenue"]
         sales_csv = report_service.format_csv(sales_rows, sales_fields)
         sales_path = EXPORT_DIR / "sales_daily.csv"
-        sales_path.write_text(sales_csv, encoding="utf-8")
+        safe_write(sales_path, sales_csv)
         print(f"      Rows Exported: {len(sales_rows):,} | Path: {sales_path.name}")
 
         # 2. sales_category.csv
@@ -54,7 +64,7 @@ def export_all():
         cat_fields = ["category", "units_sold", "transaction_count", "calculated_revenue", "average_units_per_transaction"]
         cat_csv = report_service.format_csv(cat_rows, cat_fields)
         cat_path = EXPORT_DIR / "sales_category.csv"
-        cat_path.write_text(cat_csv, encoding="utf-8")
+        safe_write(cat_path, cat_csv)
         print(f"      Rows Exported: {len(cat_rows):,} | Path: {cat_path.name}")
 
         # 3. product_movement.csv
@@ -66,7 +76,7 @@ def export_all():
         ]
         mov_csv = report_service.format_csv(mov_rows, mov_fields)
         mov_path = EXPORT_DIR / "product_movement.csv"
-        mov_path.write_text(mov_csv, encoding="utf-8")
+        safe_write(mov_path, mov_csv)
         print(f"      Rows Exported: {len(mov_rows):,} | Path: {mov_path.name}")
 
         # 4. inventory_snapshot.csv
@@ -78,7 +88,7 @@ def export_all():
         ]
         inv_csv = report_service.format_csv(inv_rows, inv_fields)
         inv_path = EXPORT_DIR / "inventory_snapshot.csv"
-        inv_path.write_text(inv_csv, encoding="utf-8")
+        safe_write(inv_path, inv_csv)
         print(f"      Rows Exported: {len(inv_rows):,} | Path: {inv_path.name}")
 
         # 5. store_sales.csv
@@ -87,7 +97,7 @@ def export_all():
         store_fields = ["store_id", "store_name", "city", "units_sold", "transaction_count", "calculated_revenue"]
         store_csv = report_service.format_csv(store_rows, store_fields)
         store_path = EXPORT_DIR / "store_sales.csv"
-        store_path.write_text(store_csv, encoding="utf-8")
+        safe_write(store_path, store_csv)
         print(f"      Rows Exported: {len(store_rows):,} | Path: {store_path.name}")
 
         # 6. recommendations.csv
@@ -99,7 +109,7 @@ def export_all():
         ]
         rec_csv = report_service.format_csv(rec_rows, rec_fields)
         rec_path = EXPORT_DIR / "recommendations.csv"
-        rec_path.write_text(rec_csv, encoding="utf-8")
+        safe_write(rec_path, rec_csv)
         print(f"      Rows Exported: {len(rec_rows):,} | Path: {rec_path.name}")
 
         # 7. dim_date.csv (Star Schema Date Dimension)
@@ -125,7 +135,7 @@ def export_all():
         date_fields = ["date", "year", "month_number", "month_name", "quarter", "year_month", "day", "day_of_week"]
         date_csv = report_service.format_csv(date_rows, date_fields)
         date_path = EXPORT_DIR / "dim_date.csv"
-        date_path.write_text(date_csv, encoding="utf-8")
+        safe_write(date_path, date_csv)
         print(f"      Rows Exported: {len(date_rows):,} | Path: {date_path.name}")
 
         # 8. dim_products.csv (Star Schema Product Dimension)
@@ -135,7 +145,7 @@ def export_all():
         prod_fields = ["product_id", "product_name", "category", "cost_price", "selling_price"]
         prod_csv = report_service.format_csv(prod_rows, prod_fields)
         prod_path = EXPORT_DIR / "dim_products.csv"
-        prod_path.write_text(prod_csv, encoding="utf-8")
+        safe_write(prod_path, prod_csv)
         print(f"      Rows Exported: {len(prod_rows):,} | Path: {prod_path.name}")
 
         # 9. dim_stores.csv (Star Schema Store Dimension)
@@ -145,7 +155,7 @@ def export_all():
         store_dim_fields = ["store_id", "store_name", "city", "location", "open_date"]
         store_dim_csv = report_service.format_csv(store_dim_rows, store_dim_fields)
         store_dim_path = EXPORT_DIR / "dim_stores.csv"
-        store_dim_path.write_text(store_dim_csv, encoding="utf-8")
+        safe_write(store_dim_path, store_dim_csv)
         print(f"      Rows Exported: {len(store_dim_rows):,} | Path: {store_dim_path.name}")
 
     print("\n" + "=" * 68)

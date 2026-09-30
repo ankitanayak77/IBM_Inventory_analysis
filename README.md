@@ -268,7 +268,32 @@ Chain-wide aggregate baseline: **7 products require operational attention** (7 M
 
 ---
 
-## 16. Dashboard & Analytics
+---
+
+## 16. Product UX/UI Architecture & Navigation System
+
+The web frontend features an enterprise operational design system structured around information hierarchy, visual restraint, and single-placement action architecture:
+
+### 1. Application Shell & Collapsible Navigation Rail
+- **Desktop Default (≥ 992px):** Compact 68px icon rail displaying brand mark, SVG navigation icons with accessible CSS hover tooltips (`data-tooltip`), and system connection indicator.
+- **Expanded Sidebar (250px):** Clicking the sidebar toggle expands the rail into a full desktop navigation sidebar displaying brand identity, section groupings (`OPERATIONS`, `INTELLIGENCE`, `ACCOUNT`, `ADMINISTRATION`), and icon + text labels. State is persisted in client `localStorage`.
+- **Mobile Responsive Drawer (< 992px):** Sidebar collapses off-canvas and opens as a slide-out overlay drawer with a darkened backdrop scrim and outside-click dismissal. Zero horizontal body scroll on small viewports.
+
+### 2. Role-Aware Navigation Matrices
+Navigation links strictly mirror the authenticated session's server-side permissions:
+- **System Administrator:** Full operational access, analytics, and User Governance (`/admin/users`).
+- **Inventory Manager:** Products, Inventory, Sales, Inbound Restock, Velocity Analytics, Recommendations, Reports & BI, Profile.
+- **Data Analyst:** Executive Dashboard, Read-Only Inventory, Sales, Velocity Analytics, Recommendations, Reports & BI, Profile.
+- **Store Associate:** Store Operations Terminal, Point-of-Sale Sale Entry (`/sales/add`), Live Store Stock Availability Lookup, Profile.
+
+### 3. Single-Placement Action & Profile Architecture
+- **Deduplicated Navigation:** Replaced scattered duplicate buttons with a unified user profile menu in the top bar ([Avatar] Full Name ▾) offering direct access to *My Profile*, *User Governance* (admins), and *Sign Out*.
+- **Focused Profile Pages:** `/profile` consolidates identity credentials, account governance metadata, and RBAC permissions with header actions (`Edit Profile`, `Change Password`). `/profile/edit` and `/profile/password` are dedicated single-purpose forms with inline validation.
+- **Contained Responsive Tables:** Wide operational data tables (Inventory, Sales, Products) are encased in overflow-x scroll containers, preventing page-level horizontal overflow.
+
+---
+
+## 17. Dashboard & Analytics
 
 The executive dashboard (`/dashboard`) provides 9 responsive visualizations:
 1. **Sales Volume Trend:** Daily units sold timeline with moving average.

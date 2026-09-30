@@ -145,7 +145,7 @@
         <div class="form-actions">
             <a href="{{ url_for('sales') }}" class="btn btn-outline">Cancel</a>
             <button type="submit" class="btn btn-primary" id="submitBtn">
-                <span>💳</span> Confirm &amp; Record Sale
+                <span>Confirm &amp; Record Sale</span>
             </button>
         </div>
     </form>
@@ -202,7 +202,7 @@
                 stockBox.classList.add('out-of-stock');
                 stockBadge.className = 'kpi-badge badge-rose';
                 stockBadge.textContent = 'Out of Stock';
-                stockHelp.textContent = '⚠️ This store has 0 units of this product. Sale cannot proceed.';
+                stockHelp.textContent = 'Alert: This store has 0 units of this product. Sale cannot proceed.';
             } else if (currentAvailableStock < data.reorder_level) {
                 stockBox.classList.add('low-stock');
                 stockBadge.className = 'kpi-badge badge-amber';
@@ -232,7 +232,7 @@
 
         // Validate quantity vs stock
         if (qty > currentAvailableStock && currentAvailableStock >= 0) {
-            qtyHelp.innerHTML = `<span style="color:#b91c1c; font-weight:600;">⚠️ Requested quantity (${qty}) exceeds available stock (${currentAvailableStock})!</span>`;
+            qtyHelp.innerHTML = `<span style="color:#b91c1c; font-weight:600;">Alert: Requested quantity (${qty}) exceeds available stock (${currentAvailableStock})!</span>`;
             submitBtn.disabled = true;
             submitBtn.style.opacity = '0.5';
             submitBtn.style.cursor = 'not-allowed';

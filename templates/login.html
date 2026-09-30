@@ -2,8 +2,8 @@
 
 {% block title %}Sign In{% endblock %}
 {% block breadcrumb %}
-<span>Authentication</span>
-<span>/</span>
+<span class="breadcrumb-space">Authentication</span>
+<span class="breadcrumb-separator">/</span>
 <span class="breadcrumb-active">Sign In</span>
 {% endblock %}
 
@@ -12,15 +12,15 @@
     <div class="auth-card">
         <!-- Auth Header -->
         <div class="auth-header">
-            <div class="auth-brand-icon">📦</div>
+            <div class="auth-brand-icon">
+                {{ icon('logo', 28) }}
+            </div>
             <h2 class="auth-title">Welcome Back</h2>
-            <p class="auth-subtitle">Sign in to your Smart Inventory & Analytics account</p>
+            <p class="auth-subtitle">Sign in to your Smart Inventory &amp; Analytics account</p>
         </div>
 
-
-
         <!-- Login Form -->
-        <form method="POST" action="{{ url_for('login', next=request.args.get('next', '')) }}" id="loginForm" class="auth-form">
+        <form method="POST" action="{{ url_for('login', next=request.args.get('next', '')) }}" id="loginForm" class="auth-form" novalidate>
             <!-- CSRF Protection Token -->
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -29,7 +29,7 @@
                     Work Email <span class="required">*</span>
                 </label>
                 <div class="input-with-icon">
-                    <span class="input-icon">✉️</span>
+                    <span class="input-icon">{{ icon('mail', 16) }}</span>
                     <input 
                         type="email" 
                         id="email" 
@@ -43,7 +43,7 @@
                         oninput="validateLoginEmail()"
                     >
                 </div>
-                <div id="emailFeedback" style="font-size:0.75rem; margin-top:3px; display:none;"></div>
+                <div id="emailFeedback" class="form-feedback" style="display:none;"></div>
             </div>
 
             <div class="form-group">
@@ -53,7 +53,7 @@
                     </label>
                 </div>
                 <div class="input-with-icon">
-                    <span class="input-icon">🔒</span>
+                    <span class="input-icon">{{ icon('lock', 16) }}</span>
                     <input 
                         type="password" 
                         id="password" 
@@ -63,18 +63,18 @@
                         autocomplete="current-password"
                         required
                     >
-                    <button type="button" class="password-toggle" onclick="togglePassword('password', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
-                        👁️
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
+                        {{ icon('eye', 16) }}
                     </button>
                 </div>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="role">
-                    Role <span class="required">*</span>
+                    Operational Role <span class="required">*</span>
                 </label>
                 <div class="input-with-icon">
-                    <span class="input-icon">💼</span>
+                    <span class="input-icon">{{ icon('shield', 16) }}</span>
                     <select id="role" name="role" class="form-control" required style="cursor:pointer; appearance: auto;">
                         <option value="System Administrator" {% if role in ['System Administrator', 'Administrator'] %}selected{% endif %}>System Administrator</option>
                         <option value="Inventory Manager" {% if role == 'Inventory Manager' %}selected{% endif %}>Inventory Manager</option>
@@ -82,9 +82,9 @@
                         <option value="Store Associate" {% if not role or role == 'Store Associate' %}selected{% endif %}>Store Associate</option>
                     </select>
                 </div>
-                <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">
-                    Role authentication check: Must match the role assigned to your account.
-                </div>
+                <span class="form-help">
+                    Role authentication check: Must match the operational role assigned to your account.
+                </span>
             </div>
 
             <div class="form-row-auth">
@@ -106,167 +106,17 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<style>
-.auth-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 30px 16px 60px 16px;
-    min-height: calc(100vh - 180px);
-}
-
-.auth-card {
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-xl);
-    padding: 36px 32px;
-    width: 100%;
-    max-width: 460px;
-    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-}
-
-.auth-header {
-    text-align: center;
-    margin-bottom: 22px;
-}
-
-.auth-brand-icon {
-    font-size: 2.2rem;
-    margin-bottom: 8px;
-    display: inline-block;
-}
-
-.auth-title {
-    font-size: 1.45rem;
-    font-weight: 700;
-    color: var(--text-main);
-    margin: 0 0 6px 0;
-}
-
-.auth-subtitle {
-    font-size: 0.88rem;
-    color: var(--text-muted);
-    margin: 0;
-}
-
-
-
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.input-with-icon {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input-icon {
-    position: absolute;
-    left: 12px;
-    font-size: 1rem;
-    pointer-events: none;
-    color: var(--text-light);
-}
-
-.input-with-icon .form-control {
-    padding-left: 38px;
-    padding-right: 40px;
-}
-
-.password-toggle {
-    position: absolute;
-    right: 10px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.05rem;
-    color: var(--text-muted);
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.7;
-    transition: opacity 0.15s;
-}
-
-.password-toggle:hover {
-    opacity: 1;
-}
-
-.form-row-auth {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.84rem;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    color: #334155;
-    user-select: none;
-}
-
-.checkbox-label input[type="checkbox"] {
-    accent-color: var(--brand-primary);
-    width: 15px;
-    height: 15px;
-    cursor: pointer;
-}
-
-.btn-block {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.btn-lg {
-    padding: 12px 18px;
-    font-size: 0.95rem;
-    font-weight: 600;
-}
-
-.auth-footer {
-    margin-top: 24px;
-    padding-top: 18px;
-    border-top: 1px solid var(--border-subtle);
-    text-align: center;
-    font-size: 0.86rem;
-    color: var(--text-muted);
-}
-
-.auth-link {
-    color: var(--brand-primary);
-    font-weight: 600;
-    text-decoration: none;
-    margin-left: 4px;
-}
-
-.auth-link:hover {
-    text-decoration: underline;
-    color: var(--brand-hover);
-}
-</style>
-
+{% block extra_scripts %}
 <script>
-
-
-function togglePassword(inputId, btn) {
+function togglePasswordVisibility(inputId, btn) {
     const input = document.getElementById(inputId);
     if (!input) return;
     if (input.type === 'password') {
         input.type = 'text';
-        btn.textContent = '🙈';
     } else {
         input.type = 'password';
-        btn.textContent = '👁️';
     }
 }
 
@@ -283,10 +133,12 @@ function validateLoginEmail() {
     if (!emailRegex.test(email) || email.includes(' ') || (email.match(/@/g) || []).length !== 1) {
         feedback.style.display = 'block';
         feedback.textContent = '✗ Invalid email format (must be user@domain.com, no spaces)';
-        feedback.style.color = '#ef4444';
+        feedback.className = 'form-feedback invalid';
         return false;
     } else {
-        feedback.style.display = 'none';
+        feedback.style.display = 'block';
+        feedback.textContent = '✓ Valid email format';
+        feedback.className = 'form-feedback valid';
         return true;
     }
 }

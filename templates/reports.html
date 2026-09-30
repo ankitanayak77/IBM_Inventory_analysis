@@ -1,7 +1,8 @@
+{% from "macros/icons.html" import icon %}
 {% extends "base.html" %}
 
 {% block title %}Analytical Reports & Power BI Exports{% endblock %}
-{% block breadcrumb %}Reports &amp; Exports{% endblock %}
+{% block breadcrumb %}<span class="breadcrumb-space">Intelligence</span> <span class="breadcrumb-separator">/</span> <span class="breadcrumb-active">Reports &amp; BI</span>{% endblock %}
 
 {% block content %}
 <!-- Page Header -->
@@ -12,14 +13,14 @@
     </div>
     <div style="display:flex; gap:10px;">
         <a href="{{ url_for('export_all_powerbi_zip') }}" class="btn btn-primary" title="Download all 6 normalized CSVs + README in a ZIP archive">
-            📦 Download All Datasets (.ZIP)
+            <span class="btn-icon">{{ icon('box', 14) }}</span> <span>Download All Datasets (.ZIP)</span>
         </a>
     </div>
 </div>
 
 <!-- Analytical Architecture Notice -->
 <div class="semantic-notice info" style="margin-bottom: 24px;">
-    <div class="notice-icon">💡</div>
+    <div class="notice-icon">{{ icon('info', 18) }}</div>
     <div class="notice-body">
         <h4>Analytical Data Semantics &amp; Model Distinction</h4>
         <p>
@@ -34,7 +35,7 @@
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Historical Units Sold</span>
-            <div class="kpi-icon-wrap icon-blue">📦</div>
+            <div class="kpi-icon-wrap icon-blue">{{ icon('box', 18) }}</div>
         </div>
         <div class="kpi-value">{{ "{:,}".format(summary_kpis.total_units_sold) }}</div>
         <div class="kpi-footer">
@@ -46,7 +47,7 @@
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Calculated Revenue</span>
-            <div class="kpi-icon-wrap icon-emerald">💰</div>
+            <div class="kpi-icon-wrap icon-emerald">{{ icon('analytics', 18) }}</div>
         </div>
         <div class="kpi-value">${{ "{:,.2f}".format(summary_kpis.calculated_revenue) }}</div>
         <div class="kpi-footer">
@@ -58,7 +59,7 @@
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Catalog Products</span>
-            <div class="kpi-icon-wrap icon-cyan">🏷️</div>
+            <div class="kpi-icon-wrap icon-cyan"></div>
         </div>
         <div class="kpi-value">{{ summary_kpis.products_analyzed }}</div>
         <div class="kpi-footer">
@@ -70,7 +71,7 @@
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Retail Store Branches</span>
-            <div class="kpi-icon-wrap icon-purple">🏬</div>
+            <div class="kpi-icon-wrap icon-purple"></div>
         </div>
         <div class="kpi-value">{{ summary_kpis.stores_analyzed }}</div>
         <div class="kpi-footer">
@@ -82,7 +83,7 @@
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Current Stock on Hand</span>
-            <div class="kpi-icon-wrap icon-cyan">📊</div>
+            <div class="kpi-icon-wrap icon-cyan"></div>
         </div>
         <div class="kpi-value">{{ "{:,}".format(summary_kpis.total_physical_stock) }}</div>
         <div class="kpi-footer">
@@ -94,7 +95,7 @@
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Stock Condition Alerts</span>
-            <div class="kpi-icon-wrap icon-amber">⚠️</div>
+            <div class="kpi-icon-wrap icon-amber"></div>
         </div>
         <div class="kpi-value" style="color: #b45309;">{{ summary_kpis.low_stock_records + summary_kpis.out_of_stock_records }}</div>
         <div class="kpi-footer">
@@ -106,7 +107,7 @@
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Items Requiring Attention</span>
-            <div class="kpi-icon-wrap icon-rose">💡</div>
+            <div class="kpi-icon-wrap icon-rose"></div>
         </div>
         <div class="kpi-value" style="color: #e11d48;">{{ summary_kpis.requires_attention_count }}</div>
         <div class="kpi-footer">
@@ -119,25 +120,25 @@
 <!-- Report Navigation Tabs -->
 <div style="display:flex; gap:8px; border-bottom:2px solid var(--border-color); margin-bottom:24px; overflow-x:auto;">
     <a href="{{ url_for('reports', tab='sales') }}" class="btn {% if active_tab == 'sales' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
-        📅 Daily Sales Summary
+         Daily Sales Summary
     </a>
     <a href="{{ url_for('reports', tab='category') }}" class="btn {% if active_tab == 'category' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
-        🏷️ Category Sales
+         Category Sales
     </a>
     <a href="{{ url_for('reports', tab='movement') }}" class="btn {% if active_tab == 'movement' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
-        ⚡ Product Movement
+         Product Movement
     </a>
     <a href="{{ url_for('reports', tab='store') }}" class="btn {% if active_tab == 'store' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
-        🏬 Store Performance
+         Store Performance
     </a>
     <a href="{{ url_for('reports', tab='inventory') }}" class="btn {% if active_tab == 'inventory' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
-        📦 Inventory Snapshot
+         Inventory Snapshot
     </a>
     <a href="{{ url_for('reports', tab='recommendations') }}" class="btn {% if active_tab == 'recommendations' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
-        💡 Recommendations
+         Recommendations
     </a>
     <a href="{{ url_for('reports', tab='export-center') }}" class="btn {% if active_tab == 'export-center' %}btn-primary{% else %}btn-outline{% endif %}" style="border-radius:6px 6px 0 0; border-bottom:none; margin-bottom:-2px;">
-        📁 Export Center
+         Export Center
     </a>
 </div>
 
@@ -462,7 +463,7 @@
             <p class="panel-subtitle">Clean, tabular UTF-8 CSV datasets formatted specifically for Microsoft Power BI data modeling and DAX measures</p>
         </div>
         <a href="{{ url_for('export_all_powerbi_zip') }}" class="btn btn-primary">
-            📦 Download All 6 Datasets (.ZIP)
+             Download All 6 Datasets (.ZIP)
         </a>
     </div>
 

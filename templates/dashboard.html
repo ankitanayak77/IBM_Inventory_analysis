@@ -1,3 +1,4 @@
+{% from "macros/icons.html" import icon %}
 {% extends "base.html" %}
 
 {% block title %}
@@ -25,24 +26,8 @@ Executive Operations &ndash; Dashboard
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
         <a href="{{ url_for('add_sale') }}" class="btn btn-primary btn-lg" id="btnRecordSale">
-            <span>➕</span> Record New Sale (POS)
+            <span class="btn-icon">{{ icon('plus', 16) }}</span> <span>Record New Sale (POS)</span>
         </a>
-    </div>
-</div>
-
-<!-- Associate Quick Navigation Action Bar -->
-<div class="panel-card" style="margin-bottom: 24px; padding: 16px 20px;">
-    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 1.2rem;">⚡</span>
-            <strong style="color: var(--text-main); font-size: 0.95rem;">Operations Quick Actions:</strong>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-            <a href="{{ url_for('add_sale') }}" class="btn btn-primary btn-sm">Record Sale</a>
-            <a href="{{ url_for('inventory') }}" class="btn btn-outline btn-sm">Inventory Lookup</a>
-            <a href="{{ url_for('sales') }}" class="btn btn-outline btn-sm">Recent Sales Activity</a>
-            <a href="{{ url_for('profile') }}" class="btn btn-outline btn-sm">My Profile</a>
-        </div>
     </div>
 </div>
 
@@ -52,7 +37,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Current Stock on Hand</span>
-            <div class="kpi-icon-wrap icon-cyan">📦</div>
+            <div class="kpi-icon-wrap icon-cyan">{{ icon('box', 18) }}</div>
         </div>
         <div class="kpi-value">{{ "{:,}".format(kpis.total_stock) }}</div>
         <div class="kpi-footer">
@@ -65,7 +50,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Healthy Stock</span>
-            <div class="kpi-icon-wrap icon-emerald">✅</div>
+            <div class="kpi-icon-wrap icon-emerald">{{ icon('check', 18) }}</div>
         </div>
         <div class="kpi-value" style="color: #047857;">{{ "{:,}".format(kpis.normal_stock) }}</div>
         <div class="kpi-footer">
@@ -78,7 +63,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Low Stock Alerts</span>
-            <div class="kpi-icon-wrap icon-amber">⚠️</div>
+            <div class="kpi-icon-wrap icon-amber">{{ icon('alert-circle', 18) }}</div>
         </div>
         <div class="kpi-value" style="color: #b45309;">{{ "{:,}".format(kpis.low_stock) }}</div>
         <div class="kpi-footer">
@@ -91,7 +76,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Out of Stock</span>
-            <div class="kpi-icon-wrap icon-rose">🚫</div>
+            <div class="kpi-icon-wrap icon-rose">{{ icon('alert-circle', 18) }}</div>
         </div>
         <div class="kpi-value" style="color: #b91c1c;">{{ "{:,}".format(kpis.out_of_stock) }}</div>
         <div class="kpi-footer">
@@ -105,7 +90,7 @@ Executive Operations &ndash; Dashboard
 <div class="panel-card" style="margin-bottom: 24px;">
     <div class="panel-header">
         <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:1.3rem;">🔍</span>
+            <span class="panel-icon">{{ icon('search', 20) }}</span>
             <div>
                 <h3 class="panel-title">Instant Inventory Stock Lookup</h3>
                 <p class="panel-subtitle">Check real-time stock availability and retail price before completing customer orders</p>
@@ -132,7 +117,7 @@ Executive Operations &ndash; Dashboard
             </div>
             <div>
                 <button type="button" class="btn btn-primary" onclick="lookupAssociateStock()" style="height:38px; width:100%;">
-                    <span>🔎</span> Check Stock Availability
+                    <span class="btn-icon">{{ icon('search', 16) }}</span> <span>Check Stock Availability</span>
                 </button>
             </div>
         </div>
@@ -198,9 +183,9 @@ Executive Operations &ndash; Dashboard
         <p class="page-header-subtitle">Sales velocity trends, categorical revenue contribution, product movement classification, and recommendation priorities</p>
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
-        <a href="{{ url_for('analytics') }}" class="btn btn-outline">Velocity Analytics</a>
-        <a href="{{ url_for('recommendations') }}" class="btn btn-primary">Recommendation Engine</a>
-        <a href="{{ url_for('reports') }}" class="btn btn-outline">Reports &amp; BI Exports</a>
+        <a href="{{ url_for('analytics') }}" class="btn btn-outline btn-sm"><span class="btn-icon">{{ icon('analytics', 14) }}</span> Velocity Analytics</a>
+        <a href="{{ url_for('recommendations') }}" class="btn btn-primary btn-sm"><span class="btn-icon">{{ icon('recommendations', 14) }}</span> Recommendation Engine</a>
+        <a href="{{ url_for('reports') }}" class="btn btn-outline btn-sm"><span class="btn-icon">{{ icon('reports', 14) }}</span> Reports &amp; BI Exports</a>
     </div>
 </div>
 
@@ -261,7 +246,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Total Units Sold</span>
-            <div class="kpi-icon-wrap icon-blue">📦</div>
+            <div class="kpi-icon-wrap icon-blue">{{ icon('box', 18) }}</div>
         </div>
         <div class="kpi-value">{{ "{:,}".format(kpis.total_units_sold) }}</div>
         <div class="kpi-footer">
@@ -274,7 +259,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Calculated Revenue</span>
-            <div class="kpi-icon-wrap icon-emerald">💰</div>
+            <div class="kpi-icon-wrap icon-emerald">{{ icon('analytics', 18) }}</div>
         </div>
         <div class="kpi-value">${{ "{:,.2f}".format(kpis.calculated_revenue) }}</div>
         <div class="kpi-footer">
@@ -287,7 +272,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Average Daily Sales</span>
-            <div class="kpi-icon-wrap icon-cyan">📅</div>
+            <div class="kpi-icon-wrap icon-cyan">{{ icon('calendar', 18) }}</div>
         </div>
         <div class="kpi-value">{{ "{:,.1f}".format(kpis.avg_daily_sales) }}</div>
         <div class="kpi-footer">
@@ -300,7 +285,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Catalog Sales Velocity</span>
-            <div class="kpi-icon-wrap icon-purple">⚡</div>
+            <div class="kpi-icon-wrap icon-purple">{{ icon('analytics', 18) }}</div>
         </div>
         <div class="kpi-value">{{ "{:.2f}".format(kpis.overall_velocity) }}</div>
         <div class="kpi-footer">
@@ -313,7 +298,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Movement Distribution</span>
-            <div class="kpi-icon-wrap icon-amber">📊</div>
+            <div class="kpi-icon-wrap icon-amber">{{ icon('dashboard', 18) }}</div>
         </div>
         <div class="kpi-value" style="font-size:1.25rem; font-weight:700;">
             <span style="color:#10b981;">{{ movement_summary.fast_moving_count|default(9) }}F</span> &bull; 
@@ -330,7 +315,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Current Inventory Snapshot</span>
-            <div class="kpi-icon-wrap icon-cyan">🏢</div>
+            <div class="kpi-icon-wrap icon-cyan">{{ icon('inventory', 18) }}</div>
         </div>
         <div class="kpi-value">{{ "{:,}".format(kpis.total_stock) }}</div>
         <div class="kpi-footer">
@@ -343,7 +328,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Attention Signals</span>
-            <div class="kpi-icon-wrap icon-rose">⚠️</div>
+            <div class="kpi-icon-wrap icon-rose">{{ icon('alert-circle', 18) }}</div>
         </div>
         <div class="kpi-value" style="color:#b91c1c;">{{ attention_summary.high_priority_count + attention_summary.medium_priority_count }}</div>
         <div class="kpi-footer">
@@ -356,7 +341,7 @@ Executive Operations &ndash; Dashboard
 <!-- Visual Analytics Charts Grid -->
 <div class="chart-section-header">
     <div>
-        <h3 class="chart-section-title"><span>📈</span> Sales &amp; Revenue Trends</h3>
+        <h3 class="chart-section-title">Sales &amp; Revenue Trends</h3>
         <p class="chart-section-subtitle">Daily transaction volume and calculated revenue trajectory over selected period</p>
     </div>
 </div>
@@ -393,7 +378,7 @@ Executive Operations &ndash; Dashboard
 
 <div class="chart-section-header">
     <div>
-        <h3 class="chart-section-title"><span>📊</span> Category &amp; Top Product Performance</h3>
+        <h3 class="chart-section-title">Category &amp; Top Product Performance</h3>
         <p class="chart-section-subtitle">Contribution across merchandise categories and top-selling SKUs</p>
     </div>
 </div>
@@ -430,7 +415,7 @@ Executive Operations &ndash; Dashboard
 
 <div class="chart-section-header">
     <div>
-        <h3 class="chart-section-title"><span>🏬</span> Movement &amp; Store Performance</h3>
+        <h3 class="chart-section-title">Movement &amp; Store Performance</h3>
         <p class="chart-section-subtitle">Movement distribution, recommendation signals, and branch sales</p>
     </div>
 </div>
@@ -487,7 +472,7 @@ Executive Operations &ndash; Dashboard
 <div class="panel-card" style="margin-bottom: 24px;">
     <div class="panel-header">
         <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:1.3rem;">💡</span>
+            <span class="panel-icon">{{ icon('recommendations', 20) }}</span>
             <div>
                 <h3 class="panel-title">Inventory Attention &amp; Recommendation Signals</h3>
                 <p class="panel-subtitle">Rule-based inventory evaluation combining sales velocity with days of stock coverage</p>
@@ -614,10 +599,19 @@ Executive Operations &ndash; Dashboard
         <h2 class="page-header-title">Executive Dashboard &amp; Visual Analytics Operations Center</h2>
         <p class="page-header-subtitle">Real-time stock monitoring, operational transactions, replenishment workflows, and multi-dimensional sales analytics</p>
     </div>
-    <div style="display:flex; gap:10px; align-items:center;">
-        <a href="{{ url_for('add_product') }}" class="btn btn-outline"><span>🏷️</span> Add Product</a>
-        <a href="{{ url_for('add_sale') }}" class="btn btn-outline"><span>💳</span> Record Sale</a>
-        <a href="{{ url_for('add_restock') }}" class="btn btn-primary"><span>🔄</span> Restock</a>
+    <div class="page-header-actions" aria-label="Manager Quick Actions">
+        <span class="header-tag" style="background:var(--brand-subtle); color:var(--brand-hover); border-color:var(--brand-light); font-size:0.75rem;">
+            {{ icon('shield', 14) }} Manager Quick Actions
+        </span>
+        <a href="{{ url_for('add_product') }}" class="btn btn-outline btn-sm">
+            <span class="btn-icon">{{ icon('products', 14) }}</span> Add Product
+        </a>
+        <a href="{{ url_for('add_sale') }}" class="btn btn-outline btn-sm">
+            <span class="btn-icon">{{ icon('sales', 14) }}</span> Record Sale
+        </a>
+        <a href="{{ url_for('add_restock') }}" class="btn btn-primary btn-sm">
+            <span class="btn-icon">{{ icon('restock', 14) }}</span> Restock
+        </a>
     </div>
 </div>
 
@@ -625,7 +619,7 @@ Executive Operations &ndash; Dashboard
 <!-- Administrator Notice Banner -->
 <div class="alert alert-info" style="margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
     <div style="display:flex; align-items:center; gap:10px;">
-        <span style="font-size:1.25rem;">🛡️</span>
+        <span class="alert-icon">{{ icon('shield', 20) }}</span>
         <div>
             <strong>System Administrator Mode:</strong> Full enterprise governance active. You have complete operational, inventory, analytical, and user management authority.
         </div>
@@ -635,25 +629,6 @@ Executive Operations &ndash; Dashboard
     </a>
 </div>
 {% endif %}
-
-<!-- Manager Quick Actions Bar -->
-<div class="panel-card" style="margin-bottom: 24px; padding: 16px 20px;">
-    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 1.2rem;">⚡</span>
-            <strong style="color: var(--text-main); font-size: 0.95rem;">Manager Quick Actions:</strong>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-            <a href="{{ url_for('add_product') }}" class="btn btn-outline btn-sm">Add Product</a>
-            <a href="{{ url_for('add_sale') }}" class="btn btn-outline btn-sm">Record Sale</a>
-            <a href="{{ url_for('add_restock') }}" class="btn btn-primary btn-sm">Restock</a>
-            <a href="{{ url_for('inventory') }}" class="btn btn-outline btn-sm">View Inventory</a>
-            <a href="{{ url_for('analytics') }}" class="btn btn-outline btn-sm">View Analytics</a>
-            <a href="{{ url_for('recommendations') }}" class="btn btn-outline btn-sm">View Recommendations</a>
-            <a href="{{ url_for('reports') }}" class="btn btn-outline btn-sm">View Reports</a>
-        </div>
-    </div>
-</div>
 
 <!-- Shared Dashboard Filter Toolbar -->
 <div class="chart-filter-toolbar">
@@ -712,7 +687,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Total Units Sold</span>
-            <div class="kpi-icon-wrap icon-blue">📦</div>
+            <div class="kpi-icon-wrap icon-blue">{{ icon('box', 18) }}</div>
         </div>
         <div class="kpi-value">{{ "{:,}".format(kpis.total_units_sold) }}</div>
         <div class="kpi-footer">
@@ -725,7 +700,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Calculated Revenue</span>
-            <div class="kpi-icon-wrap icon-emerald">💰</div>
+            <div class="kpi-icon-wrap icon-emerald">{{ icon('analytics', 18) }}</div>
         </div>
         <div class="kpi-value">${{ "{:,.2f}".format(kpis.calculated_revenue) }}</div>
         <div class="kpi-footer">
@@ -738,7 +713,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Current Inventory</span>
-            <div class="kpi-icon-wrap icon-cyan">🏢</div>
+            <div class="kpi-icon-wrap icon-cyan">{{ icon('inventory', 18) }}</div>
         </div>
         <div class="kpi-value">{{ "{:,}".format(kpis.total_stock) }}</div>
         <div class="kpi-footer">
@@ -751,7 +726,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Inventory Value</span>
-            <div class="kpi-icon-wrap icon-emerald">💵</div>
+            <div class="kpi-icon-wrap icon-emerald">{{ icon('analytics', 18) }}</div>
         </div>
         <div class="kpi-value" style="color: #047857;">${{ "{:,.2f}".format(kpis.inventory_value) }}</div>
         <div class="kpi-footer">
@@ -764,7 +739,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Low Stock Alerts</span>
-            <div class="kpi-icon-wrap icon-amber">⚠️</div>
+            <div class="kpi-icon-wrap icon-amber">{{ icon('alert-circle', 18) }}</div>
         </div>
         <div class="kpi-value" style="color: #b45309;">{{ "{:,}".format(kpis.low_stock) }}</div>
         <div class="kpi-footer">
@@ -777,7 +752,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Out of Stock</span>
-            <div class="kpi-icon-wrap icon-rose">🚫</div>
+            <div class="kpi-icon-wrap icon-rose">{{ icon('alert-circle', 18) }}</div>
         </div>
         <div class="kpi-value" style="color: #b91c1c;">{{ "{:,}".format(kpis.out_of_stock) }}</div>
         <div class="kpi-footer">
@@ -790,7 +765,7 @@ Executive Operations &ndash; Dashboard
     <div class="kpi-card">
         <div class="kpi-header">
             <span class="kpi-label">Requiring Attention</span>
-            <div class="kpi-icon-wrap icon-rose">💡</div>
+            <div class="kpi-icon-wrap icon-rose">{{ icon('recommendations', 18) }}</div>
         </div>
         <div class="kpi-value" style="color: #b91c1c;">{{ attention_summary.high_priority_count + attention_summary.medium_priority_count }}</div>
         <div class="kpi-footer">
@@ -805,7 +780,7 @@ Executive Operations &ndash; Dashboard
      ===================================================================== -->
 <div class="chart-section-header">
     <div>
-        <h3 class="chart-section-title"><span>📈</span> Sales &amp; Revenue Trends</h3>
+        <h3 class="chart-section-title">Sales &amp; Revenue Trends</h3>
         <p class="chart-section-subtitle">Daily transaction volume and calculated revenue trajectory over selected period</p>
     </div>
 </div>
@@ -845,7 +820,7 @@ Executive Operations &ndash; Dashboard
      ===================================================================== -->
 <div class="chart-section-header">
     <div>
-        <h3 class="chart-section-title"><span>📊</span> Category &amp; Top Product Performance</h3>
+        <h3 class="chart-section-title">Category &amp; Top Product Performance</h3>
         <p class="chart-section-subtitle">Contribution across merchandise categories and top-selling SKUs</p>
     </div>
 </div>
@@ -885,7 +860,7 @@ Executive Operations &ndash; Dashboard
      ===================================================================== -->
 <div class="chart-section-header">
     <div>
-        <h3 class="chart-section-title"><span>📦</span> Current Inventory State &amp; Health</h3>
+        <h3 class="chart-section-title">Current Inventory State &amp; Health</h3>
         <p class="chart-section-subtitle">Real-time stock status and stock-on-hand distribution across catalog categories</p>
     </div>
     <span class="kpi-badge badge-cyan">Current Inventory State</span>
@@ -926,7 +901,7 @@ Executive Operations &ndash; Dashboard
      ===================================================================== -->
 <div class="chart-section-header">
     <div>
-        <h3 class="chart-section-title"><span>🏬</span> Store Performance &amp; Operational Analytics</h3>
+        <h3 class="chart-section-title">Store Performance &amp; Operational Analytics</h3>
         <p class="chart-section-subtitle">Top retail store sales, movement classification distribution, and decision-support signals</p>
     </div>
 </div>
@@ -985,7 +960,7 @@ Executive Operations &ndash; Dashboard
 <div class="panel-card" style="margin-bottom: 24px;">
     <div class="panel-header">
         <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:1.3rem;">💡</span>
+            <span class="panel-icon">{{ icon('recommendations', 20) }}</span>
             <div>
                 <h3 class="panel-title">Inventory Attention &amp; Decision Support</h3>
                 <p class="panel-subtitle">Rule-based replenishment priorities combining sales velocity and stock coverage</p>

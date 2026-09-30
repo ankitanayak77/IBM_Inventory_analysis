@@ -1,7 +1,8 @@
+{% from "macros/icons.html" import icon %}
 {% extends "base.html" %}
 
 {% block title %}Rule-Based Inventory Recommendations{% endblock %}
-{% block breadcrumb %}Recommendations{% endblock %}
+{% block breadcrumb %}<span class="breadcrumb-space">Intelligence</span> <span class="breadcrumb-separator">/</span> <span class="breadcrumb-active">Recommendations</span>{% endblock %}
 
 {% block content %}
 <!-- Page Header -->
@@ -15,14 +16,14 @@
             Analysis Period: {{ start_date }} &ndash; {{ end_date }} ({{ num_days }} days)
         </span>
         <a href="{{ url_for('analytics') }}" class="btn btn-outline btn-sm">
-            <span>📈</span> View Velocity Analytics
+            <span class="btn-icon">{{ icon('analytics', 14) }}</span> <span>View Velocity Analytics</span>
         </a>
     </div>
 </div>
 
 <!-- Semantic Data Architecture Notice -->
 <div class="semantic-notice info">
-    <div class="notice-icon">💡</div>
+    <div class="notice-icon">{{ icon('info', 18) }}</div>
     <div class="notice-body">
         <h4>Transparent Rule-Based Decision Support System (Not AI / Machine Learning)</h4>
         <p>
@@ -46,7 +47,7 @@
     <div class="kpi-card" style="cursor:pointer;" onclick="location.href='{{ url_for('recommendations', priority='HIGH') }}';" title="Filter High Priority">
         <div class="kpi-header">
             <span class="kpi-label">Needs Attention</span>
-            <div class="kpi-icon-wrap icon-rose">⚠️</div>
+            <div class="kpi-icon-wrap icon-rose">{{ icon('alert-circle', 18) }}</div>
         </div>
         <div class="kpi-value font-mono" style="color:#b91c1c;">{{ summary.requires_attention_count }}</div>
         <div class="kpi-footer">
@@ -59,7 +60,7 @@
     <div class="kpi-card" style="cursor:pointer;" onclick="location.href='{{ url_for('recommendations', recommendation='PRIORITIZE REPLENISHMENT') }}';" title="Filter Prioritize Replenishment">
         <div class="kpi-header">
             <span class="kpi-label">Prioritize Restock</span>
-            <div class="kpi-icon-wrap icon-rose">🛑</div>
+            <div class="kpi-icon-wrap icon-rose">{{ icon('alert-circle', 18) }}</div>
         </div>
         <div class="kpi-value font-mono" style="color:#b91c1c;">{{ summary.prioritize_replenishment_count }}</div>
         <div class="kpi-footer">
@@ -72,7 +73,7 @@
     <div class="kpi-card" style="cursor:pointer;" onclick="location.href='{{ url_for('recommendations', recommendation='REPLENISH SOON') }}';" title="Filter Replenish Soon">
         <div class="kpi-header">
             <span class="kpi-label">Replenish Soon</span>
-            <div class="kpi-icon-wrap icon-amber">📦</div>
+            <div class="kpi-icon-wrap icon-amber"></div>
         </div>
         <div class="kpi-value font-mono" style="color:#b45309;">{{ summary.replenish_soon_count }}</div>
         <div class="kpi-footer">
@@ -98,7 +99,7 @@
     <div class="kpi-card" style="cursor:pointer;" onclick="location.href='{{ url_for('recommendations', recommendation='REVIEW INVENTORY LEVEL') }}';" title="Filter Review Inventory Level">
         <div class="kpi-header">
             <span class="kpi-label">Review Inventory</span>
-            <div class="kpi-icon-wrap icon-blue">🔍</div>
+            <div class="kpi-icon-wrap icon-blue"></div>
         </div>
         <div class="kpi-value font-mono" style="color:#2563eb;">{{ summary.review_inventory_level_count }}</div>
         <div class="kpi-footer">
@@ -111,7 +112,7 @@
     <div class="kpi-card" style="cursor:pointer;" onclick="location.href='{{ url_for('recommendations', recommendation='MAINTAIN CURRENT LEVEL') }}';" title="Filter Maintain Current Level">
         <div class="kpi-header">
             <span class="kpi-label">Maintain Level</span>
-            <div class="kpi-icon-wrap icon-emerald">✅</div>
+            <div class="kpi-icon-wrap icon-emerald">{{ icon('check', 18) }}</div>
         </div>
         <div class="kpi-value font-mono" style="color:#059669;">{{ summary.maintain_current_level_count }}</div>
         <div class="kpi-footer">
@@ -294,7 +295,7 @@
                 {% else %}
                 <tr>
                     <td colspan="11" style="text-align:center; padding: 48px 20px;">
-                        <div style="font-size:2rem; margin-bottom:8px;">🔍</div>
+                        <div style="font-size:2rem; margin-bottom:8px;"></div>
                         <div style="font-weight:600; color:var(--text-main); font-size:1rem;">No Recommendations Match Filter</div>
                         <p style="color:var(--text-muted); font-size:0.85rem; margin-top:4px;">
                             Try clearing priority or recommendation filter criteria.

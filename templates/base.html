@@ -1,123 +1,128 @@
+{% from "macros/icons.html" import icon %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Dashboard{% endblock %} | {{ app_name }}</title>
-    <!-- Google Fonts: Inter -->
+    <!-- Google Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.0">
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body class="{% if request.args.get('sidebar') == 'expanded' %}sidebar-expanded{% else %}sidebar-collapsed{% endif %}{% if request.args.get('mobile_nav') == 'open' %} mobile-drawer-open{% endif %}">
     <!-- Mobile Overlay Backdrop -->
-    <div id="mobileOverlay" class="mobile-overlay"></div>
+    <div id="mobileOverlay" class="mobile-overlay" aria-hidden="true"></div>
 
-    <!-- Sidebar Navigation -->
-    <aside class="app-sidebar" id="appSidebar">
+    <!-- Sidebar Navigation Shell -->
+    <aside class="app-sidebar" id="appSidebar" aria-label="Primary Navigation">
+        <!-- Sidebar Header with Brand Mark and Toggle Button -->
         <div class="sidebar-header">
-            <div class="brand-icon">📦</div>
-            <div class="brand-title">
-                <h1>Smart Inventory</h1>
-                <span>Analytics System</span>
-            </div>
+            <a href="{{ url_for('dashboard') }}" class="brand-link" title="Smart Inventory & Sales Analysis System">
+                <div class="brand-icon">
+                    {{ icon('logo', 20) }}
+                </div>
+                <div class="brand-title">
+                    <span class="brand-name">Smart Inventory</span>
+                    <span class="brand-sub">Analytics System</span>
+                </div>
+            </a>
+            <button type="button" class="sidebar-toggle-btn" id="sidebarToggleInner" aria-label="Toggle Navigation Width" title="Expand / Collapse Sidebar">
+                {{ icon('sidebar', 16) }}
+            </button>
         </div>
 
+        <!-- Navigation Links Matrix -->
         <nav class="sidebar-nav">
-            <div class="nav-section-title">
-                {% if current_user and current_user.role == 'Store Associate' %}
-                    Store Operations
-                {% else %}
-                    Core Management
-                {% endif %}
-            </div>
+            <div class="nav-section-title">Operations</div>
             
-            <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.path in ['/', '/dashboard'] %}active{% endif %}">
-                <span class="nav-icon">📊</span>
-                <span>Dashboard</span>
+            <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.path in ['/', '/dashboard'] %}active{% endif %}" title="Executive Dashboard" data-tooltip="Dashboard">
+                <span class="nav-icon">{{ icon('dashboard', 18) }}</span>
+                <span class="nav-label">Dashboard</span>
             </a>
 
             {% if not current_user or current_user.role in ['Administrator', 'System Administrator', 'Inventory Manager'] %}
-            <a href="{{ url_for('products') }}" class="nav-link {% if request.path.startswith('/products') %}active{% endif %}">
-                <span class="nav-icon">🏷️</span>
-                <span>Products</span>
-                <span class="nav-badge">Catalog</span>
+            <a href="{{ url_for('products') }}" class="nav-link {% if request.path.startswith('/products') %}active{% endif %}" title="Product Catalog" data-tooltip="Products">
+                <span class="nav-icon">{{ icon('products', 18) }}</span>
+                <span class="nav-label">Products</span>
             </a>
             {% endif %}
 
             {% if not current_user or current_user.role != 'Store Associate' %}
-            <a href="{{ url_for('inventory') }}" class="nav-link {% if request.path.startswith('/inventory') %}active{% endif %}">
-                <span class="nav-icon">🏢</span>
-                <span>Inventory</span>
-                <span class="nav-badge">Stock</span>
+            <a href="{{ url_for('inventory') }}" class="nav-link {% if request.path.startswith('/inventory') %}active{% endif %}" title="Store Inventory Tracking" data-tooltip="Inventory">
+                <span class="nav-icon">{{ icon('inventory', 18) }}</span>
+                <span class="nav-label">Inventory</span>
             </a>
             {% endif %}
 
-            <a href="{{ url_for('sales') }}" class="nav-link {% if request.path.startswith('/sales') %}active{% endif %}">
-                <span class="nav-icon">💳</span>
-                <span>Sales</span>
+            <a href="{{ url_for('sales') }}" class="nav-link {% if request.path.startswith('/sales') %}active{% endif %}" title="Sales History & POS" data-tooltip="Sales">
+                <span class="nav-icon">{{ icon('sales', 18) }}</span>
+                <span class="nav-label">Sales</span>
             </a>
 
             {% if current_user and current_user.role == 'Store Associate' %}
-            <a href="{{ url_for('inventory') }}" class="nav-link {% if request.path.startswith('/inventory') %}active{% endif %}">
-                <span class="nav-icon">🏢</span>
-                <span>Inventory Lookup</span>
-                <span class="nav-badge">Stock</span>
+            <a href="{{ url_for('inventory') }}" class="nav-link {% if request.path.startswith('/inventory') %}active{% endif %}" title="Instant Stock Availability Lookup" data-tooltip="Inventory Lookup">
+                <span class="nav-icon">{{ icon('inventory', 18) }}</span>
+                <span class="nav-label">Inventory Lookup</span>
             </a>
             {% endif %}
 
             {% if not current_user or current_user.role in ['Administrator', 'System Administrator', 'Inventory Manager'] %}
-            <a href="{{ url_for('restock') }}" class="nav-link {% if request.path.startswith('/restock') %}active{% endif %}">
-                <span class="nav-icon">🔄</span>
-                <span>Restock</span>
+            <a href="{{ url_for('restock') }}" class="nav-link {% if request.path.startswith('/restock') %}active{% endif %}" title="Inbound Replenishment" data-tooltip="Restock">
+                <span class="nav-icon">{{ icon('restock', 18) }}</span>
+                <span class="nav-label">Restock</span>
             </a>
             {% endif %}
 
             {% if not current_user or current_user.role in ['Administrator', 'System Administrator', 'Inventory Manager', 'Data Analyst'] %}
-            <div class="nav-section-title">Intelligence & BI</div>
-            <a href="{{ url_for('analytics') }}" class="nav-link {% if request.path.startswith('/analytics') %}active{% endif %}">
-                <span class="nav-icon">📈</span>
-                <span>Analytics</span>
+            <div class="nav-section-title">Intelligence</div>
+            
+            <a href="{{ url_for('analytics') }}" class="nav-link {% if request.path.startswith('/analytics') %}active{% endif %}" title="Sales Velocity & Movement Classification" data-tooltip="Analytics">
+                <span class="nav-icon">{{ icon('analytics', 18) }}</span>
+                <span class="nav-label">Analytics</span>
             </a>
-            <a href="{{ url_for('recommendations') }}" class="nav-link {% if request.path.startswith('/recommendations') %}active{% endif %}">
-                <span class="nav-icon">💡</span>
-                <span>Recommendations</span>
-                <span class="nav-badge" style="background:#fef3c7; color:#92400e;">Rules</span>
+
+            <a href="{{ url_for('recommendations') }}" class="nav-link {% if request.path.startswith('/recommendations') %}active{% endif %}" title="Decision-Support Signals" data-tooltip="Recommendations">
+                <span class="nav-icon">{{ icon('recommendations', 18) }}</span>
+                <span class="nav-label">Recommendations</span>
             </a>
-            <a href="{{ url_for('reports') }}" class="nav-link {% if request.path.startswith('/reports') or request.path.startswith('/powerbi') %}active{% endif %}">
-                <span class="nav-icon">📑</span>
-                <span>Reports & BI</span>
+
+            <a href="{{ url_for('reports') }}" class="nav-link {% if request.path.startswith('/reports') or request.path.startswith('/powerbi') %}active{% endif %}" title="Analytical Reports & Power BI Exports" data-tooltip="Reports & BI">
+                <span class="nav-icon">{{ icon('reports', 18) }}</span>
+                <span class="nav-label">Reports &amp; BI</span>
             </a>
             {% endif %}
 
             {% if current_user %}
-            <div class="nav-section-title">My Account</div>
-            <a href="{{ url_for('profile') }}" class="nav-link {% if request.path.startswith('/profile') %}active{% endif %}">
-                <span class="nav-icon">👤</span>
-                <span>My Profile</span>
+            <div class="nav-section-title">Account</div>
+            <a href="{{ url_for('profile') }}" class="nav-link {% if request.path.startswith('/profile') %}active{% endif %}" title="Account Profile & Credentials" data-tooltip="My Profile">
+                <span class="nav-icon">{{ icon('profile', 18) }}</span>
+                <span class="nav-label">My Profile</span>
             </a>
             {% endif %}
 
             {% if current_user and current_user.role in ['Administrator', 'System Administrator'] %}
             <div class="nav-section-title">Administration</div>
-            <a href="{{ url_for('admin_users') }}" class="nav-link {% if request.path.startswith('/admin') %}active{% endif %}">
-                <span class="nav-icon">🛡️</span>
-                <span>User Governance</span>
-                <span class="nav-badge" style="background:#e0e7ff; color:#4338ca;">Admin</span>
+            <a href="{{ url_for('admin_users') }}" class="nav-link {% if request.path.startswith('/admin') %}active{% endif %}" title="User Governance & RBAC Policies" data-tooltip="User Governance">
+                <span class="nav-icon">{{ icon('admin', 18) }}</span>
+                <span class="nav-label">User Governance</span>
             </a>
             {% endif %}
         </nav>
 
+        <!-- Sidebar Footer -->
         <div class="sidebar-footer">
-            <div class="db-status-pill">
+            <div class="db-status-pill" title="SQLite WAL Database Connected">
                 <span class="status-dot"></span>
-                <span>SQLite Connected</span>
+                <span class="status-text">SQLite Connected</span>
             </div>
-            <div>Dataset: Mexico Toy Sales</div>
-            <div style="color: #475569; font-size: 0.7rem;">v{{ app_version }} &bull; Descriptive Analytics</div>
+            <div class="sidebar-footer-text">
+                <div class="footer-meta-item">Mexico Retail Model</div>
+                <div class="footer-meta-sub">v{{ app_version }} &bull; Enterprise Analytics</div>
+            </div>
         </div>
     </aside>
 
@@ -126,35 +131,63 @@
         <!-- Top App Bar -->
         <header class="app-header">
             <div class="header-left">
-                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Navigation">☰</button>
+                <button type="button" class="sidebar-menu-btn" id="sidebarMenuBtn" aria-label="Toggle Navigation Rail" title="Toggle Sidebar">
+                    {{ icon('menu', 20) }}
+                </button>
                 <div class="page-breadcrumb">
-                    <span>Smart Inventory</span>
-                    <span>/</span>
+                    <span class="breadcrumb-root">Smart Inventory</span>
+                    <span class="breadcrumb-separator">/</span>
                     <span class="breadcrumb-active">{% block breadcrumb %}Dashboard{% endblock %}</span>
                 </div>
             </div>
+
             <div class="header-right">
-                <span class="header-tag">
-                    <span style="color:#10b981;">●</span> Initial Snapshot Active
-                </span>
-                <span class="header-tag">
-                    <span>📅</span> 2017 &ndash; 2018 Data
-                </span>
+                <!-- System Status Context -->
+                <div class="header-status-pill" title="Active Analytical Dataset Scope">
+                    <span class="status-dot"></span>
+                    <span class="header-status-label">2017 &ndash; 2018 Dataset</span>
+                </div>
+
                 {% if current_user %}
-                <div class="user-profile-menu">
-                    <a href="{{ url_for('profile') }}" class="user-avatar-badge" title="My Profile ({{ current_user.email }})" style="text-decoration:none; color:inherit;">
+                <!-- Unified Profile Menu Dropdown -->
+                <div class="user-menu-container" id="userMenuContainer">
+                    <button type="button" class="user-menu-btn" id="userMenuBtn" aria-expanded="false" aria-haspopup="true" title="User Menu ({{ current_user.email }})">
                         <span class="user-avatar-circle">{{ user_initials or current_user.name[:2].upper() }}</span>
-                        <div class="user-meta">
-                            <span class="user-name">{{ current_user.name }}</span>
-                            <span class="user-role-badge">{{ current_user.role }}</span>
+                        <div class="user-menu-meta">
+                            <span class="user-menu-name">{{ current_user.name }}</span>
+                            <span class="user-menu-role">{{ current_user.role }}</span>
                         </div>
-                    </a>
-                    <a href="{{ url_for('profile') }}" class="btn btn-outline btn-sm" title="My Profile">
-                        <span>👤</span> My Profile
-                    </a>
-                    <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm" title="Sign Out">
-                        Sign Out
-                    </a>
+                        <span class="user-menu-chevron">
+                            {{ icon('chevron-down', 14) }}
+                        </span>
+                    </button>
+
+                    <!-- Dropdown Panel -->
+                    <div class="user-dropdown-menu" id="userDropdownMenu" role="menu" aria-label="User Account Options">
+                        <div class="dropdown-header">
+                            <div class="dropdown-user-name">{{ current_user.name }}</div>
+                            <div class="dropdown-user-email">{{ current_user.email }}</div>
+                            <div class="dropdown-user-role">
+                                <span class="role-badge role-badge-{{ current_user.role|lower|replace(' ', '-') }}">{{ current_user.role }}</span>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ url_for('profile') }}" class="dropdown-item" role="menuitem">
+                            <span class="dropdown-item-icon">{{ icon('profile', 16) }}</span>
+                            <span>My Profile</span>
+                        </a>
+                        {% if current_user.role in ['Administrator', 'System Administrator'] %}
+                        <a href="{{ url_for('admin_users') }}" class="dropdown-item" role="menuitem">
+                            <span class="dropdown-item-icon">{{ icon('admin', 16) }}</span>
+                            <span>User Governance</span>
+                        </a>
+                        {% endif %}
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ url_for('logout') }}" class="dropdown-item dropdown-item-danger" role="menuitem">
+                            <span class="dropdown-item-icon">{{ icon('logout', 16) }}</span>
+                            <span>Sign Out</span>
+                        </a>
+                    </div>
                 </div>
                 {% else %}
                 <div class="auth-action-buttons">
@@ -172,15 +205,20 @@
                 {% if messages %}
                 <div class="flash-container">
                     {% for category, message in messages %}
-                    <div class="alert alert-{{ category if category != 'message' else 'info' }}">
+                    <div class="alert alert-{{ category if category != 'message' else 'info' }}" role="alert">
                         <span class="alert-icon">
-                            {% if category == 'success' %}✅
-                            {% elif category == 'danger' or category == 'error' %}⚠️
-                            {% elif category == 'warning' %}🔔
-                            {% else %}ℹ️{% endif %}
+                            {% if category == 'success' %}
+                                {{ icon('check', 18) }}
+                            {% elif category in ['danger', 'error'] %}
+                                {{ icon('alert-circle', 18) }}
+                            {% elif category == 'warning' %}
+                                {{ icon('alert-circle', 18) }}
+                            {% else %}
+                                {{ icon('info', 18) }}
+                            {% endif %}
                         </span>
                         <div class="alert-content">{{ message }}</div>
-                        <button type="button" class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+                        <button type="button" class="alert-close" onclick="this.parentElement.remove();" aria-label="Close notification">&times;</button>
                     </div>
                     {% endfor %}
                 </div>
@@ -192,7 +230,7 @@
     </div>
 
     <!-- Client Script -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=2.1"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>
